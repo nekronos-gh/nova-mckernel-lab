@@ -1,0 +1,6 @@
+kern/build/*.[do]
+kern/build/hypervisor
+user/build/*.[do]
+user/build/user.nova
+user/build/user.nova.debug
+user/build/user.nova.debug.map

@@ -136,16 +136,20 @@ void Ec::handle_tss()
 
 void Ec::syscall_handler (uint8 n)
 {
-    switch (n) {
+    switch (static_cast<SyscallNum>(n)) {
 
-    case 0:
+    case SyscallNum::SYS_DUMP:
         sys_dump();
+        break;
+
+    case SyscallNum::SYS_PRINT:
+        sys_print();
         break;
 
     default:
         printf ("syscall %d - unknown\n", n);
         break;
-	}
+    }
 
     ret_user_sysexit();
 
@@ -155,6 +159,14 @@ void Ec::syscall_handler (uint8 n)
 void Ec::sys_dump()
 {
     printf ("EC:%p SYS_DUMP : %#lx, %#lx\n", current, current->sys_regs()->esi, current->sys_regs()->edi);
+
+    ret_user_sysexit();
+}
+
+void Ec::sys_print()
+{
+    const char *user_str = reinterpret_cast<const char *>(current->sys_regs()->esi);
+    printf ("%s", user_str);
 
     ret_user_sysexit();
 }

@@ -25,6 +25,11 @@
 #include "memory.h"
 #include "stdio.h"
 
+enum class SyscallNum : uint8 {
+    SYS_DUMP  = 0,
+    SYS_PRINT = 1,
+};
+
 class Ec
 {
     private:
@@ -77,6 +82,9 @@ class Ec
 
         NORETURN
         static void sys_dump();
+
+        NORETURN
+        static void sys_print();
 
         ALWAYS_INLINE
         static inline void *operator new (size_t) { return Kalloc::allocator.alloc(sizeof (Ec)); }

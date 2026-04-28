@@ -29,8 +29,14 @@ unsigned sys_yield()
     return syscall1 (0xdeadbeaf /* TODO use correct syscall number*/);
 }
 
+unsigned sys_print(const char *str)
+{
+    return syscall2(1, (unsigned)str);
+}
+
 EXTERN_C NORETURN
 void main_func ()
 {
+    sys_print("Hello from user space!\n");
     while (1) ;
 }

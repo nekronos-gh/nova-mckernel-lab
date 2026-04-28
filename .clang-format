@@ -1,0 +1,3 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+# Add your custom rules here

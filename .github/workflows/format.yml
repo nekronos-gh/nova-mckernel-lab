@@ -1,0 +1,29 @@
+name: Automatic Formatting
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Run Clang-Format
+        uses: DoozyX/clang-format-lint-action@v0.17
+        with:
+          source: "."
+          extensions: "hpp,cpp,c,h"
+          inplace: True
+
+      - name: Commit & Push Changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "style: auto-format C++ code"
+          status_options: "--untracked-files=no"

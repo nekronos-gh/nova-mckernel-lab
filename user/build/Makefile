@@ -1,6 +1,5 @@
 SRC_DIR	= ../src
-SRC	= $(notdir $(wildcard $(SRC_DIR)/*cc))
-TARGET	= $(SRC:.cc=.nova)
+TARGET 	= user.nova
 VPATH	= $(SRC_DIR)
 
 STRIP	= strip
@@ -10,6 +9,7 @@ CCFLAGS+= \
 	-g \
 
 CXXFLAGS+= \
+	-I../include \
 	-m32 \
 	-MD \
 	-Os \

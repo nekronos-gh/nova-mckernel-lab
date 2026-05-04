@@ -151,10 +151,10 @@ ret_from_interrupt:     testb   $3, 0x3c(%ebx)
  * System-Call Entry
  */
 .align                  4, 0x90
-.globl                  entry_sysenter
+.globl                  entry_sysenter                                  /*  esp = TSS::sp0 */
 entry_sysenter:         cld
-                        pop     %esp
-                        lea     -44(%esp), %esp
-                        pusha
+                        pop     %esp                                    /* Load user stack pointer */
+                        lea     -44(%esp), %esp                         
+                        pusha                                           /* Save general purpose in stack */
                         mov     $(KSTCK_ADDR + PAGE_SIZE), %esp
                         jmp     syscall_handler

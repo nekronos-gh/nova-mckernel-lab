@@ -61,8 +61,6 @@ void Ec::ret_user_sysexit() {
 }
 
 void Ec::ret_user_iret() {
-    printf("Jumping to %lx\n", current->regs.eip);
-
     asm volatile("lea %0, %%esp;"
                  "popa;"
                  "pop %%gs;"
@@ -135,8 +133,23 @@ void Ec::root_invoke() {
 
 void Ec::handle_tss() { panic("Task gate invoked\n"); }
 
-void Ec::syscall_handler(uint8 n) {
-    switch (static_cast<SyscallNum>(n)) {
+void Ec::syscall_handler(syscall_frame *sys_f) {
+    // By convention
+    // EAX = pointer to the syscall frame
+    // ECX = pointer to user stack
+    // EDX = return address to the user code
+    // Last pushed element references syscall arguments
+
+    SyscallNum num = sys_f->num;
+    unsigned int argc = sys_f->argc;
+
+    printf("Syscall %d: Num args %d\n", static_cast<int>(num), sys_f->argc);
+    // Print all arguments passed in the frame
+    for (unsigned int i = 0; i < argc; ++i) {
+        printf("  arg[%d]: 0x%x\n", i, sys_f->argv[i]);
+    }
+
+    switch (num) {
 
     case SyscallNum::SYS_DUMP:
         sys_dump();
@@ -151,7 +164,7 @@ void Ec::syscall_handler(uint8 n) {
         break;
 
     default:
-        printf("syscall %d - unknown\n", n);
+        printf("syscall %d - unknown\n", static_cast<int>(num));
         break;
     }
 
@@ -163,25 +176,18 @@ void Ec::syscall_handler(uint8 n) {
 void Ec::sys_dump() {
     printf("EC:%p SYS_DUMP : %#lx, %#lx\n", current, current->sys_regs()->esi,
            current->sys_regs()->edi);
-
     ret_user_sysexit();
+    UNREACHED;
 }
 
 void Ec::sys_print() {
-    const char *user_str =
-        reinterpret_cast<const char *>(current->sys_regs()->esi);
-    printf("%s", user_str);
-
     ret_user_sysexit();
+    UNREACHED;
 }
 
 void Ec::sys_create_ec() {
 
-    new Ec(current->exc_regs()->esi, current->exc_regs()->esp);
-    current = current++;
-    current->make_current();
     ret_user_sysexit();
-
     UNREACHED;
 }
 

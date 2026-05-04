@@ -31,6 +31,12 @@ enum class SyscallNum : uint8 {
     SYS_CLONE = 2,
 };
 
+struct syscall_frame {
+    SyscallNum num;
+    unsigned argc;
+    unsigned argv[3]; // Max three arguments
+};
+
 class Ec {
   private:
     void (*cont)();
@@ -77,8 +83,8 @@ class Ec {
     NORETURN
     static void root_invoke();
 
-    HOT NORETURN
-        REGPARM(1) static void syscall_handler(uint8) asm("syscall_handler");
+    HOT NORETURN REGPARM(1) static void syscall_handler(syscall_frame *) asm(
+        "syscall_handler");
 
     NORETURN
     static void sys_dump();

@@ -1,19 +1,22 @@
 #pragma once
 
-enum SyscallNum {
+#include "types.h"
+
+enum SyscallNum : uint8 {
     SYS_DUMP = 0,
     SYS_PRINT = 1,
     SYS_CLONE = 2,
+    MAX_SYSCALL
 };
 
 struct syscall_frame {
-    SyscallNum num;
+    enum SyscallNum num;
     unsigned argc;
     unsigned argv[3]; // Max three arguments
 };
 
 // Raw syscall with frame for arguments
-static inline unsigned syscall_raw(syscall_frame *f) {
+static inline unsigned syscall_raw(struct syscall_frame *f) {
 
     unsigned res;
 

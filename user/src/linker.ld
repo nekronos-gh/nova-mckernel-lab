@@ -20,6 +20,11 @@ SECTIONS
 
         *(.data);
         *(.bss);
+
+        . = ALIGN(0x1000);
+        _heap_f = .;
+        . += 0x100000; /* 1MB */
+        _heap_e = .;
     } : data
 
     .text :

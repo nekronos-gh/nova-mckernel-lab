@@ -17,7 +17,6 @@
  */
 
 #include "ec.h"
-#include "assert.h"
 #include "bits.h"
 #include "cpu.h"
 #include "elf.h"
@@ -133,61 +132,24 @@ void Ec::root_invoke() {
 
 void Ec::handle_tss() { panic("Task gate invoked\n"); }
 
-void Ec::syscall_handler(syscall_frame *sys_f) {
+void Ec::handle_syscall(syscall_frame *f) {
     // By convention
     // EAX = pointer to the syscall frame
     // ECX = pointer to user stack
     // EDX = return address to the user code
     // Last pushed element references syscall arguments
 
-    SyscallNum num = sys_f->num;
-    unsigned int argc = sys_f->argc;
+    SyscallNum num = f->num;
 
-    printf("Syscall %d: Num args %d\n", static_cast<int>(num), sys_f->argc);
-    // Print all arguments passed in the frame
-    for (unsigned int i = 0; i < argc; ++i) {
-        printf("  arg[%d]: 0x%x\n", i, sys_f->argv[i]);
-    }
-
-    switch (num) {
-
-    case SyscallNum::SYS_DUMP:
-        sys_dump();
-        break;
-
-    case SyscallNum::SYS_PRINT:
-        sys_print();
-        break;
-
-    case SyscallNum::SYS_CLONE:
-        sys_create_ec();
-        break;
-
-    default:
+    if (num < SyscallNum::MAX_SYSCALL &&
+        syscall_table[static_cast<unsigned>(num)]) {
+        syscall_table[static_cast<unsigned>(num)]->handle(f);
+    } else {
         printf("syscall %d - unknown\n", static_cast<int>(num));
-        break;
     }
 
     ret_user_sysexit();
 
-    UNREACHED;
-}
-
-void Ec::sys_dump() {
-    printf("EC:%p SYS_DUMP : %#lx, %#lx\n", current, current->sys_regs()->esi,
-           current->sys_regs()->edi);
-    ret_user_sysexit();
-    UNREACHED;
-}
-
-void Ec::sys_print() {
-    ret_user_sysexit();
-    UNREACHED;
-}
-
-void Ec::sys_create_ec() {
-
-    ret_user_sysexit();
     UNREACHED;
 }
 

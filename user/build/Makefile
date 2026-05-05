@@ -26,7 +26,6 @@ CXXFLAGS+= \
 	-fno-PIC \
 	-minline-all-stringops \
 	-ggdb \
-	-nostdinc \
 
 CXXFLAGS+= \
 	-Wconversion \

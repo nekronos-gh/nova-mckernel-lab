@@ -23,19 +23,8 @@
 #include "memory.h"
 #include "regs.h"
 #include "stdio.h"
+#include "syscall.h"
 #include "tss.h"
-
-enum class SyscallNum : uint8 {
-    SYS_DUMP = 0,
-    SYS_PRINT = 1,
-    SYS_CLONE = 2,
-};
-
-struct syscall_frame {
-    SyscallNum num;
-    unsigned argc;
-    unsigned argv[3]; // Max three arguments
-};
 
 class Ec {
   private:
@@ -50,13 +39,12 @@ class Ec {
 
     static bool handle_exc_ts(Exc_regs *);
 
+  public:
     ALWAYS_INLINE
     inline Sys_regs *sys_regs() { return &regs; }
 
     ALWAYS_INLINE
     inline Exc_regs *exc_regs() { return &regs; }
-
-  public:
     static Ec *current;
 
     Ec(void (*)(), mword = 0);
@@ -83,17 +71,8 @@ class Ec {
     NORETURN
     static void root_invoke();
 
-    HOT NORETURN REGPARM(1) static void syscall_handler(syscall_frame *) asm(
-        "syscall_handler");
-
-    NORETURN
-    static void sys_dump();
-
-    NORETURN
-    static void sys_print();
-
-    NORETURN
-    static void sys_create_ec();
+    HOT NORETURN REGPARM(1) static void handle_syscall(
+        struct syscall_frame *) asm("syscall_handler");
 
     ALWAYS_INLINE
     static inline void *operator new(size_t) {

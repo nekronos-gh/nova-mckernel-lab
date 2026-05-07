@@ -16,34 +16,9 @@
  * GNU General Public License version 2 for more details.
  */
 
-#pragma once
-
-#include "compiler.h"
 #include "types.h"
 
-extern "C" ALWAYS_INLINE NONNULL inline void *memcpy(void *d, void const *s,
-                                                     size_t n) {
-    mword dummy;
-    asm volatile("rep; movsb"
-                 : "=D"(dummy), "+S"(s), "+c"(n)
-                 : "0"(d)
-                 : "memory");
-    return d;
-}
-
-extern "C" ALWAYS_INLINE NONNULL inline void *memset(void *d, int c, size_t n) {
-    mword dummy;
-    asm volatile("rep; stosb"
-                 : "=D"(dummy), "+c"(n)
-                 : "0"(d), "a"(c)
-                 : "memory");
-    return d;
-}
-
-extern "C" void *memmove(void *d, void const *s, size_t n);
-
-extern "C" ALWAYS_INLINE NONNULL inline void *memmove(void *d, void const *s,
-                                                      size_t n) {
+extern "C" void *memmove(void *d, void const *s, size_t n) {
     if (d == s || n == 0)
         return d;
 
@@ -59,12 +34,4 @@ extern "C" ALWAYS_INLINE NONNULL inline void *memmove(void *d, void const *s,
     }
 
     return d;
-}
-
-extern "C" ALWAYS_INLINE NONNULL inline int strcmp(char const *s1,
-                                                   char const *s2) {
-    while (*s1 && *s1 == *s2)
-        s1++, s2++;
-
-    return *s1 - *s2;
 }

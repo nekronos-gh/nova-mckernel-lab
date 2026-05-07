@@ -2,6 +2,9 @@ SRC_DIR	= ../src
 TARGET 	= user.nova
 VPATH	= $(SRC_DIR)
 
+CXX_SRCS = $(wildcard $(SRC_DIR)/*.cc)
+CXX_OBJS = $(notdir $(CXX_SRCS:.cc=.o))
+
 STRIP	= strip
 
 CCFLAGS+= \
@@ -72,7 +75,7 @@ all : $(TARGET)
 	cp $^ $@
 	$(STRIP) $@
 
-%.nova.debug : linker.ld start.o %.o
+%.nova.debug : linker.ld start.o $(CXX_OBJS)
 	$(LD) -gc-sections -N -Map=$@.map -o $@ -T $^
 
 %.o : %.S

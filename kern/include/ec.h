@@ -83,38 +83,3 @@ class Ec {
     ALWAYS_INLINE
     static inline void operator delete(void *) { /* nop */ }
 };
-
-struct UserEcStack {
-  public:
-    mword *slots[PAGE_SIZE / sizeof(mword *)];
-    unsigned count = 0;
-
-    void push(mword *addr) {
-        if (count < (PAGE_SIZE / sizeof(mword *))) {
-            slots[count++] = addr;
-        }
-    }
-
-    mword *current() {
-        if (!count) {
-            return 0;
-        }
-        return slots[0];
-    }
-
-    mword *yield() {
-        if (!count) {
-            return 0;
-        }
-        if (count < 2) {
-            return slots[0];
-        }
-
-        mword *first = slots[0];
-        for (unsigned i = 1; i < count; ++i) {
-            slots[i - 1] = slots[i];
-        }
-        slots[count - 1] = first;
-        return slots[0];
-    }
-};

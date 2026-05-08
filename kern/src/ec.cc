@@ -22,6 +22,7 @@
 #include "elf.h"
 #include "multiboot.h"
 #include "ptab.h"
+#include "scheduler.h"
 
 Ec *Ec::current = 0;
 
@@ -125,6 +126,11 @@ void Ec::root_invoke() {
         }
     }
 
+    // Push the root process into our stack
+    Scheduler::sched.enqueue(current);
+    // Set a normal return for when yielded back
+    current->cont = (void (*)())ret_user_iret;
+
     ret_user_iret();
 
     FAIL;
@@ -171,9 +177,19 @@ void Ec::handle_exc(Exc_regs *r) {
         panic("%s GP (EIP=%#lx CR2=%#lx)\n",
               r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
 
-    if (r->vec == Cpu::EXC_PF)
+    if (r->vec == Cpu::EXC_PF) {
+        bool is_main_stack_guard = (r->cr2 >= USER_MAIN_STACK_START &&
+                                    r->cr2 < USER_MAIN_STACK_START + PAGE_SIZE);
+        bool is_heap_stack_guard =
+            (r->cr2 >= USER_HEAP_START && r->cr2 < USER_HEAP_END &&
+             ((r->cr2 - USER_HEAP_START) % USER_STACK_SIZE < PAGE_SIZE));
+
+        if (is_main_stack_guard || is_heap_stack_guard)
+            panic("User Stack Overflow (EIP=%#lx CR2=%#lx)\n", r->eip, r->cr2);
+
         panic("%s PF (EIP=%#lx CR2=%#lx)\n",
               r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
+    }
 
     panic("%s EXC %#lx (EIP=%#lx CR2=%#lx)\n",
           r->eip < LINK_ADDR ? "User" : "Kernel", r->vec, r->eip, r->cr2);

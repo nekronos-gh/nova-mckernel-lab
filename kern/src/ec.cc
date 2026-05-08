@@ -129,7 +129,7 @@ void Ec::root_invoke() {
     // Push the root process into our stack
     Scheduler::sched.enqueue(current);
     // Set a normal return for when yielded back
-    current->cont = (void (*)())ret_user_iret;
+    current->cont = ret_user_iret;
 
     ret_user_iret();
 

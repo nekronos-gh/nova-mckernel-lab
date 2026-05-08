@@ -2,68 +2,47 @@ OUTPUT_FORMAT("elf32-i386")
 OUTPUT_ARCH("i386")
 ENTRY(__start)
 
-PAGE_SIZE        = 0x1000;                              /* 4KB */
+PAGE_SIZE = 0x1000;                                     /* 4KB */
 USER_STACK_PAGES = 2048;                                /* 8MB */
-USER_STACK_SIZE  = (USER_STACK_PAGES + 1) * PAGE_SIZE;  /* +1 guard page */
-HEAP_SIZE        = USER_STACK_SIZE * 2028;              /* 16GB */
+USER_STACK_SIZE = (USER_STACK_PAGES + 1) * PAGE_SIZE;   /* +1 guard page */
+HEAP_SIZE = USER_STACK_SIZE * 16;              
 
 PHDRS
     {
-	data    PT_LOAD FLAGS(6); /* RW */
-	text    PT_LOAD FLAGS(5); /* RX */
+    data    PT_LOAD FLAGS(6); /* RW */
+    text    PT_LOAD FLAGS(5); /* RX */
 }
 
 SECTIONS
     {
-    . =  PAGE_SIZE + SIZEOF_HEADERS;
-    . = ALIGN(4);
+    . = PAGE_SIZE + SIZEOF_HEADERS; 
 
-    .init_array : {
-        __init_array_start = .;
-        KEEP(*(.init_array))
-        __init_array_end = .;
-    } : data
+    .text : {
+        *(.text .text.*);
+        *(.rodata .rodata.*)                                     
+    } : text
 
     .data :
         {
+        . = ALIGN(4);                                            
+
+        /* Data & BSS */
+        __init_array_start = .;
+        KEEP(*(.init_array))
+        __init_array_end = .;
         *(.data .data.*);
-        // Define Heap
+        *(.bss .bss.*);
         . = ALIGN(PAGE_SIZE);
-        _heap_f = .;
-        . += HEAP_SIZE;
-        _heap_e = .;
-
-        // Define Stack with overflow page
-        . = ALIGN(PAGE_SIZE);
-        _stack_guard = .;
         . += PAGE_SIZE;
-        . += USER_STACK_SIZE - PAGE_SIZE;
-        . = ALIGN(PAGE_SIZE);
-        stack_top = .;
-    } : data
+    } : data 
 
-    .bss : {
-        *(.bss .bss.*);
-        *(COMMON);
-    } : data
-    .bss : {
-        *(.bss .bss.*);
-        *(COMMON);
-    } : data
+    /* Heap section */
+    _heap_f = ALIGN(PAGE_SIZE);                                         
+    . += HEAP_SIZE;
+    _heap_e = .;
 
-    .text : {
-        . = ALIGN(PAGE_SIZE);
-        *(.text .text.*);
-    } : text
-
-    .rodata : {
-        *(.rodata .rodata.*);
-    } : text
-
-    /DISCARD/ : {
-        *(.comment*)
-        *(.eh_frame)
-        *(.note*)
-    }
-
+    /* Main stack outside of heap*/
+    . = ALIGN(PAGE_SIZE);
+    . += USER_STACK_SIZE;
+    stack_top = .;
 }

@@ -3,20 +3,23 @@
 #include "types.h"
 
 enum SyscallNum : uint8 {
-    SYS_DUMP = 0,
-    SYS_PRINT = 1,
-    SYS_CLONE = 2,
+    SYS_MMAP = 0,
+    SYS_DUMP = 1,
+    SYS_PRINT = 2,
+    SYS_CLONE = 3,
+    SYS_YIELD = 4,
     MAX_SYSCALL
 };
 
 struct syscall_frame {
-    enum SyscallNum num;
+    SyscallNum num;
     unsigned argc;
     unsigned argv[3]; // Max three arguments
 };
 
 // Raw syscall with frame for arguments
-static inline unsigned syscall_raw(struct syscall_frame *f) {
+__attribute__((always_inline)) static inline unsigned
+syscall_raw(struct syscall_frame *f) {
 
     unsigned res;
 

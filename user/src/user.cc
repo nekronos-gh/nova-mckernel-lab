@@ -1,16 +1,23 @@
 #include "stdio.h"
+#include "thread.h"
 
 #define NORETURN __attribute__((noreturn))
 #define EXTERN_C extern "C"
 
 NORETURN void thread_1() {
-    printf("Hello from thread 1\n");
+    printf("Hello from Thread 1!\n", &thread_1);
+    yield();
     while (1)
         ;
 }
 
 EXTERN_C NORETURN void main_func() {
-    printf("Hello from main function\n");
+    printf("Hello from user space!\n", &main_func);
+
+    clone(&thread_1);
+    yield();
+
+    printf("Back on track...\n");
     while (1)
         ;
 }

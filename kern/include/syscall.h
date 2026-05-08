@@ -1,12 +1,14 @@
 #pragma once
 
+#include "ec.h"
 #include "types.h"
 
-enum class SyscallNum : uint8 {
-    SYS_DUMP = 0,
-    SYS_PRINT = 1,
-    SYS_CLONE = 2,
-    SYS_YIELD = 3,
+enum SyscallNum : uint8 {
+    SYS_MMAP = 0,
+    SYS_DUMP = 1,
+    SYS_PRINT = 2,
+    SYS_CLONE = 3,
+    SYS_YIELD = 4,
     MAX_SYSCALL
 };
 
@@ -17,8 +19,8 @@ struct syscall_frame {
 };
 
 struct syscall_clone : public syscall_frame {
-    mword ip() { return argv[0]; }
-    mword sp() { return argv[1]; }
+    mword eip() { return argv[0]; }
+    mword esp() { return argv[1]; }
 };
 
 class Syscall {

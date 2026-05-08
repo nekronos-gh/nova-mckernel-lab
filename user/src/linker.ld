@@ -9,8 +9,8 @@ HEAP_SIZE = USER_STACK_SIZE * 16;
 
 PHDRS
     {
-    data    PT_LOAD FLAGS(6); /* RW */
     text    PT_LOAD FLAGS(5); /* RX */
+    data    PT_LOAD FLAGS(6); /* RW */
 }
 
 SECTIONS
@@ -24,7 +24,7 @@ SECTIONS
 
     .data :
         {
-        . = ALIGN(4);                                            
+        . = ALIGN(PAGE_SIZE);                                            
 
         /* Data & BSS */
         __init_array_start = .;
@@ -41,8 +41,9 @@ SECTIONS
     . += HEAP_SIZE;
     _heap_e = .;
 
-    /* Main stack outside of heap*/
+    /* Main stack outside of heap */
     . = ALIGN(PAGE_SIZE);
+    _user_stack_bottom = .;
     . += USER_STACK_SIZE;
-    stack_top = .;
+    _user_stack_top = .;
 }

@@ -4,6 +4,8 @@
 
 #define PAGE_BITS 12
 #define PAGE_SIZE (1 << PAGE_BITS)
+// 2 Pages (4KB) per stack
+// 1 Unmapped page for stack overflow
 #define STACK_SIZE ((PAGE_SIZE << 1) + PAGE_SIZE)
 
 class ProcessHeap {

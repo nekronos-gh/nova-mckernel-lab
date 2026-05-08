@@ -2,9 +2,10 @@
 #include "heap.h"
 #include "stdio.h"
 #include "symbols.h"
+#include "syscall.h"
 
-ProcessHeap ProcessHeap::heap(reinterpret_cast<mword>(&_heap_start),
-                              reinterpret_cast<mword>(&_heap_end));
+ProcessHeap ProcessHeap::heap(reinterpret_cast<mword>(&_heap_f),
+                              reinterpret_cast<mword>(&_heap_e));
 
 void *ProcessHeap::alloc_stack() {
     if (begin + USER_STACK_SIZE > end) {
@@ -12,9 +13,10 @@ void *ProcessHeap::alloc_stack() {
         return nullptr;
     }
 
-    void *p = reinterpret_cast<void *>(begin);
+    // First page of a stack is a Stack Overflow Sentinel
+    syscall(SYS_MMAP, USER_STACK_PAGES, begin + PAGE_SIZE);
+    begin += USER_STACK_SIZE;
 
     // Return end address of the stack allocated
-    begin += USER_STACK_SIZE;
-    return p;
+    return reinterpret_cast<void *>(begin);
 }

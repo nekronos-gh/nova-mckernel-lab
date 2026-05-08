@@ -6,6 +6,7 @@ __start:
     mov $USER_STACK_PAGES, %eax
     mov %eax, mmap_frame + 8
     # Start address (Skip first page)
+    # First page of a stack is a Stack overflow Sentinel
     mov $_user_stack_bottom, %ebx
     add $PAGE_SIZE, %ebx
     mov %ebx, mmap_frame + 12

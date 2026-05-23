@@ -21,6 +21,7 @@ struct syscall_frame {
 struct syscall_clone : public syscall_frame {
     mword eip() { return argv[0]; }
     mword esp() { return argv[1]; }
+    unsigned priority() { return argv[2]; }
 };
 
 class Syscall {

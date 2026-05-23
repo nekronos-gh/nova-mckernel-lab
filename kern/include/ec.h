@@ -48,8 +48,10 @@ class Ec {
     inline Exc_regs *exc_regs() { return &regs; }
     static Ec *current;
 
+    unsigned priority;
+
     Ec(void (*)(), mword = 0);
-    Ec(mword, mword);
+    Ec(mword, mword, unsigned);
 
     ALWAYS_INLINE NORETURN inline void make_current() {
         current = this;

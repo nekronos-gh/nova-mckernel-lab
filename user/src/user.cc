@@ -46,7 +46,7 @@ NORETURN void lo_thread_1() {
 
 NORETURN void lo_thread_2() {
     // 4th thread to run
-    printf("One for his enemy And one for himself.\n");
+    printf("One for his enemy and one for himself.\n");
     unblock(); // Unblock all
     yield();
     while (1)
@@ -55,10 +55,13 @@ NORETURN void lo_thread_2() {
 
 EXTERN_C NORETURN void main_func() {
     printf("\n----------------------\n\n");
+
+    // Create threads
     unsigned tid1 = clone(hi_thread_1, 0);
     unsigned tid2 = clone(hi_thread_2, 0);
     clone(lo_thread_1, 1);
     clone(lo_thread_2, 1);
+
     // Execute higher priority threads first
     yield();
 

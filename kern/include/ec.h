@@ -42,6 +42,7 @@ class Ec {
 
   public:
     unsigned priority;
+    bool blocked;
 
     ALWAYS_INLINE
     inline Sys_regs *sys_regs() { return &regs; }

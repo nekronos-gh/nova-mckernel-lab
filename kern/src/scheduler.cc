@@ -11,6 +11,10 @@ void Scheduler::schedule(Ec *ec) {
     q.blocked[q.tail] = 0; // Not blocked by default
     q.tail = (q.tail + 1) % MAX_ECS;
     q.count++;
+    // If no EC is currently running, yield to schedule this new EC immediately
+    if (!current_ec) {
+        yield();
+    }
 }
 
 Ec *Scheduler::yield() {
@@ -25,7 +29,7 @@ Ec *Scheduler::yield() {
     }
 
     // Find the first non-blocked EC, highest priority first
-    for (unsigned prio = NUM_PRIORITIES; prio != 0; prio--) {
+    for (unsigned prio = 0; prio < NUM_PRIORITIES; prio++) {
 
         Queue &q = queues[prio];
         if (q.count == 0)
@@ -55,7 +59,7 @@ Ec *Scheduler::yield() {
     return nullptr;
 }
 
-void Scheduler::block(Ec *ec) {
+Ec *Scheduler::block(Ec *ec) {
     // If EC is currently running, mark it blocked and yield immediately
     if (ec == current_ec) {
         Queue &q = queues[ec->priority];
@@ -64,8 +68,7 @@ void Scheduler::block(Ec *ec) {
         q.tail = (q.tail + 1) % MAX_ECS;
         q.count++;
         current_ec = nullptr;
-        yield();
-        return;
+        return yield();
     }
 
     // Mark the EC as blocked in its queue
@@ -74,9 +77,10 @@ void Scheduler::block(Ec *ec) {
         unsigned idx = (q.head + i) % MAX_ECS;
         if (q.slots[idx] == ec) {
             q.blocked[idx] = 1;
-            return;
+            break;
         }
     }
+    return nullptr;
 }
 
 void Scheduler::unblock(Ec *ec) {
@@ -87,6 +91,16 @@ void Scheduler::unblock(Ec *ec) {
         if (q.slots[idx] == ec) {
             q.blocked[idx] = 0;
             return;
+        }
+    }
+}
+
+void Scheduler::unblock_all() {
+    for (unsigned prio = 0; prio < NUM_PRIORITIES; prio++) {
+        Queue &q = queues[prio];
+        for (unsigned i = 0; i < q.count; i++) {
+            unsigned idx = (q.head + i) % MAX_ECS;
+            q.blocked[idx] = 0;
         }
     }
 }

@@ -9,6 +9,8 @@ enum SyscallNum : uint8 {
     SYS_PRINT = 2,
     SYS_CLONE = 3,
     SYS_YIELD = 4,
+    SYS_BLOCK = 5,
+    SYS_UNBLOCK = 6,
     MAX_SYSCALL
 };
 

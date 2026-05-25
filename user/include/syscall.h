@@ -8,6 +8,8 @@ enum SyscallNum : uint8 {
     SYS_PRINT = 2,
     SYS_CLONE = 3,
     SYS_YIELD = 4,
+    SYS_BLOCK = 5,
+    SYS_UNBLOCK = 6,
     MAX_SYSCALL
 };
 
@@ -35,9 +37,9 @@ syscall_raw(struct syscall_frame *f) {
 }
 
 // Shifts arguments so N lands in correct position, discards the rest
-#define VA_NARGS_IMPL(_1, _2, _3, N, ...) N
+#define VA_NARGS_IMPL(_0, _1, _2, _3, N, ...) N
 // Extracts number of args passed to __VA_ARGS__
-#define VA_NARGS(...) VA_NARGS_IMPL(__VA_ARGS__, 3, 2, 1, 0)
+#define VA_NARGS(...) VA_NARGS_IMPL(, ##__VA_ARGS__, 3, 2, 1, 0)
 
 // Builds the actual syscall frame structure explicitly
 // This is the final object passed to the kernel by reference

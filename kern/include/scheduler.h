@@ -23,6 +23,7 @@ class Scheduler {
     void schedule(Ec *ec);
     Ec *yield();
 
-    void block(Ec *ec);
+    Ec *block(Ec *ec);
     void unblock(Ec *ec);
+    void unblock_all();
 };

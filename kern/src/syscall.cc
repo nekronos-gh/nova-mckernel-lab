@@ -51,7 +51,7 @@ class SyscallClone : public Syscall {
         syscall_clone *clone_frame = static_cast<syscall_clone *>(frame);
         Ec *user_ec = new Ec(clone_frame->eip(), clone_frame->esp(),
                              clone_frame->priority());
-        Scheduler::sched.enqueue(user_ec);
+        Scheduler::sched.schedule(user_ec);
     }
 };
 

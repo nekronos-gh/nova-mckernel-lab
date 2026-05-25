@@ -6,33 +6,33 @@
 
 // Priority 1 (high): run before priority 0 ECs; round-robin with each other.
 // Priority 0 (low):  only run when the priority-1 queue is empty.
+// FIX: Starvation of low-priority ECs; implement aging or preemptive
+// scheduling.
 
 NORETURN void hi_thread_1() {
-    printf("hi1: tick 1\n");
+    printf("Ping!\n");
     yield();
-    printf("hi1: tick 2\n");
+    printf("Ping!\n");
     yield();
     while (1)
         ;
 }
 
 NORETURN void hi_thread_2() {
-    printf("hi2: tick 1\n");
+    printf("Pong!\n");
     yield();
-    printf("hi2: tick 2\n");
+    printf("Pong!\n");
     yield();
     while (1)
         ;
 }
 
 NORETURN void lo_thread_1() {
-    printf("lo1: running\n");
     while (1)
         ;
 }
 
 NORETURN void lo_thread_2() {
-    printf("lo2: running\n");
     while (1)
         ;
 }
@@ -44,9 +44,7 @@ EXTERN_C NORETURN void main_func() {
     clone(lo_thread_1, 0);
     clone(lo_thread_2, 0);
     yield();
-    // TODO: Confirm intended behavior, "main: back" is never reached because
-    // the hi threads stop yielding, holding the CPU indefinitely (cooperative
-    // scheduling, no preemption).
+    // TODO: Implement preemptive scheduling
     printf("main: back\n");
     while (1)
         ;

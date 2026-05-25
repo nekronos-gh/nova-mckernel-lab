@@ -41,14 +41,14 @@ class Ec {
     static bool handle_exc_ts(Exc_regs *);
 
   public:
+    unsigned priority;
+
     ALWAYS_INLINE
     inline Sys_regs *sys_regs() { return &regs; }
 
     ALWAYS_INLINE
     inline Exc_regs *exc_regs() { return &regs; }
     static Ec *current;
-
-    unsigned priority;
 
     Ec(void (*)(), mword = 0);
     Ec(mword, mword, unsigned);

@@ -20,6 +20,9 @@ SECTIONS
     .text : {
         *(.text .text.*);
         *(.rodata .rodata.*)                                     
+        __init_array_start = .;
+        KEEP(*(.init_array))
+        __init_array_end = .;
     } : text
 
     .data :
@@ -27,23 +30,24 @@ SECTIONS
         . = ALIGN(PAGE_SIZE);                                            
 
         /* Data & BSS */
-        __init_array_start = .;
-        KEEP(*(.init_array))
-        __init_array_end = .;
         *(.data .data.*);
         *(.bss .bss.*);
         . = ALIGN(PAGE_SIZE);
-        . += PAGE_SIZE;
     } : data 
 
     /* Heap section */
-    _heap_f = ALIGN(PAGE_SIZE);                                         
-    . += HEAP_SIZE;
-    _heap_e = .;
+    /* Clone stacks */
+    .heap (NOLOAD) : {
+        _heap_f = .;
+        . += HEAP_SIZE;
+        _heap_e = .;
+    }
 
     /* Main stack outside of heap */
-    . = ALIGN(PAGE_SIZE);
-    _user_stack_bottom = .;
-    . += USER_STACK_SIZE;
-    _user_stack_top = .;
+    .stack (NOLOAD) : {
+        . = ALIGN(PAGE_SIZE);
+        _user_stack_bottom = .;
+        . += USER_STACK_SIZE;
+        _user_stack_top = .;
+    }
 }

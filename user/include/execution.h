@@ -2,13 +2,13 @@
 #include "heap.h"
 #include "syscall.h"
 
-static unsigned clone(void (*func)(), unsigned priority) {
+static int create_ec(void (*func)(), unsigned priority, unsigned cap_slot) {
     void *stack = ProcessHeap::heap.alloc_stack();
     if (!stack)
-        return 0;
-    return syscall(SYS_CLONE, reinterpret_cast<mword>(func),
-                   reinterpret_cast<mword>(stack),
-                   static_cast<mword>(priority));
+        return -1;
+    return syscall(SYS_CREATE_EC, reinterpret_cast<mword>(func),
+                   reinterpret_cast<mword>(stack), static_cast<mword>(priority),
+                   static_cast<mword>(cap_slot));
 }
 
 static void yield() { syscall(SYS_YIELD); }

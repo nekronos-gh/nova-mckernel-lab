@@ -20,6 +20,7 @@ SECTIONS
     .text : {
         *(.text .text.*);
         *(.rodata .rodata.*)                                     
+        . = ALIGN(4);
         __init_array_start = .;
         KEEP(*(.init_array))
         __init_array_end = .;

@@ -16,7 +16,6 @@
  * GNU General Public License version 2 for more details.
  */
 
-#include "assert.h"
 #include "compiler.h"
 #include "cpu.h"
 #include "ec.h"
@@ -28,9 +27,9 @@
 #include "kalloc.h"
 #include "memory.h"
 #include "msr.h"
+#include "pd.h"
 #include "ptab.h"
 #include "stdio.h"
-#include "string.h"
 #include "tss.h"
 #include "types.h"
 
@@ -88,7 +87,9 @@ extern "C" REGPARM(1) NORETURN void bootstrap(mword addr) {
         ;
     Cpu::flush();
 
-    Ec::current = new Ec(Ec::root_invoke, addr);
+    Pd *root_pd = new Pd(); // create root PD
+
+    Ec::current = new Ec(Ec::root_invoke, addr, root_pd); // create root EC
     Ec::current->make_current();
 
     UNREACHED;

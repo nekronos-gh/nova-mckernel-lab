@@ -21,13 +21,15 @@
 #include "cpu.h"
 #include "elf.h"
 #include "multiboot.h"
+#include "pd.h"
 #include "ptab.h"
 #include "scheduler.h"
 
 Ec *Ec::current = 0;
 
 // solely used for root_invoke()
-Ec::Ec(void (*f)(), mword mbi) : cont(f), priority(0), blocked(false) {
+Ec::Ec(void (*f)(), mword mbi, Pd *p)
+    : cont(f), priority(0), blocked(false), pd(p) {
     regs.eax = mbi;
     regs.cs = SEL_USER_CODE;
     regs.ds = SEL_USER_DATA;
@@ -37,8 +39,8 @@ Ec::Ec(void (*f)(), mword mbi) : cont(f), priority(0), blocked(false) {
 }
 
 // only used by syscall create thread (EC+SC)
-Ec::Ec(mword eip, mword esp, unsigned prio)
-    : cont(ret_user_iret), priority(prio), blocked(false) {
+Ec::Ec(mword eip, mword esp, unsigned prio, Pd *p)
+    : cont(ret_user_iret), priority(prio), blocked(false), pd(p) {
     regs.cs = SEL_USER_CODE;
     regs.ds = SEL_USER_DATA;
     regs.es = SEL_USER_DATA;
@@ -61,6 +63,8 @@ void Ec::ret_user_sysexit() {
 }
 
 void Ec::ret_user_iret() {
+
+    // Dump all registers for debugging purposes
     asm volatile("lea %0, %%esp;"
                  "popa;"
                  "pop %%gs;"

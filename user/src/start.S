@@ -25,11 +25,14 @@ __start:
     mov $__init_array_start, %ebx
 1:
     cmp $__init_array_end, %ebx
+    jz 3f
+    mov (%ebx), %eax
+    test %eax, %eax # skip null function pointer
     jz 2f
-    call *(%ebx)
-    add $4, %ebx
+    call *%eax
+2:  add $4, %ebx
     jmp 1b
-2:
+3:
     call main_func
     ud2
 
@@ -40,4 +43,5 @@ mmap_frame:
     .long 2                                 # argc
     .long 0                                 # argv[0] = n_pages 
     .long 0                                 # argv[1] = start_address 
+    .long 0
     .long 0

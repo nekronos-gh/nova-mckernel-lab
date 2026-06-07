@@ -6,6 +6,8 @@ QEMU = qemu-system-i386
 
 r run :
 	$(QEMU) -kernel kern/build/hypervisor -initrd user/build/user.nova -serial stdio -display none
+d debug :
+	$(QEMU) -kernel kern/build/hypervisor -initrd user/build/user.nova -serial stdio -display none -S -s
 
 cl clean :
 	make -C kern/build clean

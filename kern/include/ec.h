@@ -27,6 +27,9 @@
 #include "syscall.h"
 #include "tss.h"
 
+// Forward declaration
+class Pd;
+
 class Ec {
   private:
     void (*cont)();
@@ -51,8 +54,9 @@ class Ec {
     inline Exc_regs *exc_regs() { return &regs; }
     static Ec *current;
 
-    Ec(void (*)(), mword = 0);
-    Ec(mword, mword, unsigned);
+    Pd *pd;
+    Ec(void (*)(), mword = 0, Pd * = 0);
+    Ec(mword, mword, unsigned, Pd *);
 
     ALWAYS_INLINE NORETURN inline void make_current() {
         current = this;

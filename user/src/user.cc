@@ -1,5 +1,5 @@
+#include "execution.h"
 #include "stdio.h"
-#include "thread.h"
 
 #define NORETURN __attribute__((noreturn))
 #define EXTERN_C extern "C"
@@ -8,6 +8,8 @@
 // Priority 0 (low):  only run when the priority-1 queue is empty.
 // FIX: Starvation of low-priority ECs; implement aging or preemptive
 // scheduling.
+// FIX:: Only one PD for now (root): extend to multiple execution contexts in
+// different memory spaces.
 
 NORETURN void hi_thread_1() {
     // 1st thread to run, should print first
@@ -56,26 +58,26 @@ NORETURN void lo_thread_2() {
 EXTERN_C NORETURN void main_func() {
     printf("\n----------------------\n\n");
 
-    // Create threads
-    unsigned tid1 = clone(hi_thread_1, 0);
-    unsigned tid2 = clone(hi_thread_2, 0);
-    clone(lo_thread_1, 1);
-    clone(lo_thread_2, 1);
+    // Create Execution contexts
+    int cap_slot1 = create_ec(hi_thread_1, 0, 0);
+    int cap_slot2 = create_ec(hi_thread_2, 0, 1);
+    create_ec(lo_thread_1, 1, 2);
+    create_ec(lo_thread_2, 1, 3);
 
     // Execute higher priority threads first
     yield();
 
     // Disable higher priority threads to let lower priority threads run
-    block(tid1);
-    block(tid2);
+    block(cap_slot1);
+    block(cap_slot2);
     block(); // Block self to yield to lower priority threads
 
     // All are unblocked at this point due to lo 2 unblock, and the higher
     // priority threads will run first
-    block(tid1);
+    block(cap_slot1);
     yield();
-    unblock(tid1);
-    block(tid2);
+    unblock(cap_slot1);
+    block(cap_slot2);
     yield();
 
     printf("\n----------------------\n");

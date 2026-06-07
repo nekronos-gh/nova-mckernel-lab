@@ -6,9 +6,9 @@
 
 // Priority 1 (high): run before priority 0 ECs; round-robin with each other.
 // Priority 0 (low):  only run when the priority-1 queue is empty.
-// FIX: Starvation of low-priority ECs; implement aging or preemptive
+// TODO: Starvation of low-priority ECs; implement aging or preemptive
 // scheduling.
-// FIX:: Only one PD for now (root): extend to multiple execution contexts in
+// TODO:: Only one PD for now (root): extend to multiple execution contexts in
 // different memory spaces.
 
 NORETURN void hi_thread_1() {

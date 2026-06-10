@@ -19,76 +19,74 @@
 #pragma once
 
 #include "compiler.h"
-#include "regs.h"
-#include "tss.h"
 #include "kalloc.h"
 #include "memory.h"
+#include "regs.h"
 #include "stdio.h"
+#include "string.h"
+#include "syscall.h"
+#include "tss.h"
 
-enum class SyscallNum : uint8 {
-    SYS_DUMP  = 0,
-    SYS_PRINT = 1,
-};
+// Forward declaration
+class Pd;
 
-class Ec
-{
-    private:
-        void        (*cont)();
-        Exc_regs    regs;
+class Ec {
+  private:
+    void (*cont)();
+    Exc_regs regs;
 
-        REGPARM (1)
-        static void handle_exc (Exc_regs *) asm ("exc_handler");
+    REGPARM(1)
+    static void handle_exc(Exc_regs *) asm("exc_handler");
 
-        NORETURN
-        static void handle_tss() asm ("tss_handler");
+    NORETURN
+    static void handle_tss() asm("tss_handler");
 
-        static bool handle_exc_ts (Exc_regs *);
+    static bool handle_exc_ts(Exc_regs *);
 
-        ALWAYS_INLINE
-        inline Sys_regs *sys_regs() { return &regs; }
+  public:
+    unsigned priority;
+    bool blocked;
 
-        ALWAYS_INLINE
-        inline Exc_regs *exc_regs() { return &regs; }
+    ALWAYS_INLINE
+    inline Sys_regs *sys_regs() { return &regs; }
 
-    public:
-        static Ec * current;
+    ALWAYS_INLINE
+    inline Exc_regs *exc_regs() { return &regs; }
+    static Ec *current;
 
-        Ec (void (*)(), mword = 0);
-        Ec (mword, mword);
+    Pd *pd;
+    Ec(void (*)(), mword = 0, Pd * = 0);
+    Ec(mword, mword, unsigned, Pd *);
 
-        ALWAYS_INLINE NORETURN
-        inline void make_current()
-        {
-            current = this;
+    ALWAYS_INLINE NORETURN inline void make_current() {
+        current = this;
 
-            Tss::run.sp0 = reinterpret_cast<mword>(exc_regs() + 1);
+        Tss::run.sp0 = reinterpret_cast<mword>(exc_regs() + 1);
 
-            asm volatile ("mov %0, %%esp;"
-                          "jmp *%1"
-                          : : "g" (KSTCK_ADDR + PAGE_SIZE), "rm" (cont) : "memory"); UNREACHED;
-        }
+        asm volatile("mov %0, %%esp;"
+                     "jmp *%1"
+                     :
+                     : "g"(KSTCK_ADDR + PAGE_SIZE), "rm"(cont)
+                     : "memory");
+        UNREACHED;
+    }
 
-        HOT NORETURN
-        static void ret_user_sysexit();
+    HOT NORETURN static void ret_user_sysexit();
 
-        NORETURN
-        static void ret_user_iret() asm ("ret_user_iret");
+    NORETURN
+    static void ret_user_iret() asm("ret_user_iret");
 
-        NORETURN
-        static void root_invoke();
+    NORETURN
+    static void root_invoke();
 
-        HOT NORETURN REGPARM (1)
-        static void syscall_handler (uint8) asm ("syscall_handler");
+    HOT NORETURN REGPARM(1) static void handle_syscall(
+        struct syscall_frame *) asm("syscall_handler");
 
-        NORETURN
-        static void sys_dump();
+    ALWAYS_INLINE
+    static inline void *operator new(size_t) {
+        return Kalloc::allocator.alloc(sizeof(Ec));
+    }
 
-        NORETURN
-        static void sys_print();
-
-        ALWAYS_INLINE
-        static inline void *operator new (size_t) { return Kalloc::allocator.alloc(sizeof (Ec)); }
-
-        ALWAYS_INLINE
-        static inline void operator delete (void *) { /* nop */ }
+    ALWAYS_INLINE
+    static inline void operator delete(void *) { /* nop */ }
 };

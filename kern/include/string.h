@@ -21,31 +21,48 @@
 #include "compiler.h"
 #include "types.h"
 
-extern "C" ALWAYS_INLINE NONNULL
-inline void *memcpy (void *d, void const *s, size_t n)
-{
+extern "C" ALWAYS_INLINE NONNULL inline void *memcpy(void *d, void const *s,
+                                                     size_t n) {
     mword dummy;
-    asm volatile ("rep; movsb"
-                  : "=D" (dummy), "+S" (s), "+c" (n)
-                  : "0" (d)
-                  : "memory");
+    asm volatile("rep; movsb"
+                 : "=D"(dummy), "+S"(s), "+c"(n)
+                 : "0"(d)
+                 : "memory");
     return d;
 }
 
-extern "C" ALWAYS_INLINE NONNULL
-inline void *memset (void *d, int c, size_t n)
-{
+extern "C" ALWAYS_INLINE NONNULL inline void *memset(void *d, int c, size_t n) {
     mword dummy;
-    asm volatile ("rep; stosb"
-                  : "=D" (dummy), "+c" (n)
-                  : "0" (d), "a" (c)
-                  : "memory");
+    asm volatile("rep; stosb"
+                 : "=D"(dummy), "+c"(n)
+                 : "0"(d), "a"(c)
+                 : "memory");
     return d;
 }
 
-extern "C" ALWAYS_INLINE NONNULL
-inline int strcmp (char const *s1, char const *s2)
-{
+extern "C" void *memmove(void *d, void const *s, size_t n);
+
+extern "C" ALWAYS_INLINE NONNULL inline void *memmove(void *d, void const *s,
+                                                      size_t n) {
+    if (d == s || n == 0)
+        return d;
+
+    unsigned char *dst = static_cast<unsigned char *>(d);
+    unsigned char const *src = static_cast<unsigned char const *>(s);
+
+    if (dst < src) {
+        for (size_t i = 0; i < n; ++i)
+            dst[i] = src[i];
+    } else {
+        for (size_t i = n; i > 0; --i)
+            dst[i - 1] = src[i - 1];
+    }
+
+    return d;
+}
+
+extern "C" ALWAYS_INLINE NONNULL inline int strcmp(char const *s1,
+                                                   char const *s2) {
     while (*s1 && *s1 == *s2)
         s1++, s2++;
 

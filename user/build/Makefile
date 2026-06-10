@@ -1,7 +1,9 @@
 SRC_DIR	= ../src
-SRC	= $(notdir $(wildcard $(SRC_DIR)/*cc))
-TARGET	= $(SRC:.cc=.nova)
+TARGET 	= user.nova
 VPATH	= $(SRC_DIR)
+
+CXX_SRCS = $(wildcard $(SRC_DIR)/*.cc)
+CXX_OBJS = $(notdir $(CXX_SRCS:.cc=.o))
 
 STRIP	= strip
 
@@ -10,6 +12,7 @@ CCFLAGS+= \
 	-g \
 
 CXXFLAGS+= \
+	-I../include \
 	-m32 \
 	-MD \
 	-Os \
@@ -26,7 +29,6 @@ CXXFLAGS+= \
 	-fno-PIC \
 	-minline-all-stringops \
 	-ggdb \
-	-nostdinc \
 
 CXXFLAGS+= \
 	-Wconversion \
@@ -73,7 +75,7 @@ all : $(TARGET)
 	cp $^ $@
 	$(STRIP) $@
 
-%.nova.debug : linker.ld start.o %.o
+%.nova.debug : linker.ld start.o $(CXX_OBJS)
 	$(LD) -gc-sections -N -Map=$@.map -o $@ -T $^
 
 %.o : %.S

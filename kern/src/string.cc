@@ -1,5 +1,5 @@
 /*
- * Standard I/O
+ * String Functions
  *
  * Copyright (C) 2009-2011 Udo Steinberg <udo@hypervisor.org>
  * Economic rights: Technische Universitaet Dresden (Germany)
@@ -16,35 +16,22 @@
  * GNU General Public License version 2 for more details.
  */
 
-#include "stdio.h"
-#include "cpu.h"
-#include "initprio.h"
-#include "lock_guard.h"
-#include "spinlock.h"
+#include "types.h"
 
-INIT_PRIORITY(PRIO_CONSOLE)
-Console_serial serial;
+extern "C" void *memmove(void *d, void const *s, size_t n) {
+    if (d == s || n == 0)
+        return d;
 
-INIT_PRIORITY(PRIO_CONSOLE)
-Spinlock printf_lock;
+    unsigned char *dst = static_cast<unsigned char *>(d);
+    unsigned char const *src = static_cast<unsigned char const *>(s);
 
-void panic(char const *format, ...) {
-    va_list args;
-    va_start(args, format);
-    serial.vprintf(format, args);
-    va_end(args);
+    if (dst < src) {
+        for (size_t i = 0; i < n; ++i)
+            dst[i] = src[i];
+    } else {
+        for (size_t i = n; i > 0; --i)
+            dst[i - 1] = src[i - 1];
+    }
 
-    Cpu::shutdown();
+    return d;
 }
-
-void printf(char const *format, ...) {
-    Lock_guard<Spinlock> guard(printf_lock);
-
-    va_list args;
-
-    va_start(args, format);
-    serial.vprintf(format, args);
-    va_end(args);
-}
-
-extern "C" NORETURN void __cxa_pure_virtual() { FAIL; }

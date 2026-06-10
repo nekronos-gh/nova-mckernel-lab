@@ -18,26 +18,33 @@
 
 #pragma once
 
-#define PAGE_BITS       12
-#define PAGE_SIZE       (1 << PAGE_BITS)
-#define PAGE_MASK       (PAGE_SIZE - 1)
+#define PAGE_BITS 12
+#define PAGE_SIZE (1 << PAGE_BITS)
+#define PAGE_MASK (PAGE_SIZE - 1)
 
-#define LOAD_ADDR       0x200000
-#define USER_ADDR       0xc0000000
+#define LOAD_ADDR 0x200000
+#define USER_ADDR 0xc0000000
 
-#define LINK_ADDR       0xc0000000
+#define LINK_ADDR 0xc0000000
 
 // Global Range from 0xc0000000 to 0xcfc00000
-//#define CPUGL_ADDR      0xcc000000
-//#define HWDEV_EADDR     0xcfbff000
-//#define VGACN_ADDR      0xcfbff000
+// #define CPUGL_ADDR      0xcc000000
+// #define HWDEV_EADDR     0xcfbff000
+// #define VGACN_ADDR      0xcfbff000
 
 // CPU Local Range from 0xcfc00000 to 0xd0000000
-//#define LOCAL_SADDR     0xcfc00000
-#define LAPIC_ADDR      0xcfffd000
-#define KSTCK_ADDR      0xcffff000
+// #define LOCAL_SADDR     0xcfc00000
+#define LAPIC_ADDR 0xcfffd000
+#define KSTCK_ADDR 0xcffff000
 
 // AS Local Range from 0xd0000000 to max
-#define IOBMP_SADDR     0xd0000000
-#define IOBMP_EADDR     (IOBMP_SADDR + PAGE_SIZE * 2)
-#define REMAP_SADDR     0xdf000000
+#define IOBMP_SADDR 0xd0000000
+#define IOBMP_EADDR (IOBMP_SADDR + PAGE_SIZE * 2)
+#define REMAP_SADDR 0xdf000000
+
+// User Layout Constants
+#define USER_HEAP_START 0x4000
+#define USER_HEAP_END 0x08014000
+#define USER_MAIN_STACK_START 0x08014000
+#define USER_MAIN_STACK_END 0x08815000
+#define USER_STACK_SIZE 0x801000

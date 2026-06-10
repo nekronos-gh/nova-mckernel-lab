@@ -16,91 +16,96 @@
  * GNU General Public License version 2 for more details.
  */
 
-#include "bits.h"
 #include "ec.h"
-#include "assert.h"
+#include "bits.h"
 #include "cpu.h"
-#include "ptab.h"
-#include "multiboot.h"
 #include "elf.h"
+#include "multiboot.h"
+#include "pd.h"
+#include "ptab.h"
+#include "scheduler.h"
 
-Ec * Ec::current = 0;
+Ec *Ec::current = 0;
 
 // solely used for root_invoke()
-Ec::Ec (void (*f)(), mword mbi) : cont (f)
-{
+Ec::Ec(void (*f)(), mword mbi, Pd *p)
+    : cont(f), priority(0), blocked(false), pd(p) {
     regs.eax = mbi;
-    regs.cs  = SEL_USER_CODE;
-    regs.ds  = SEL_USER_DATA;
-    regs.es  = SEL_USER_DATA;
-    regs.ss  = SEL_USER_DATA;
-    regs.efl = 0x200;           // IF = 1
+    regs.cs = SEL_USER_CODE;
+    regs.ds = SEL_USER_DATA;
+    regs.es = SEL_USER_DATA;
+    regs.ss = SEL_USER_DATA;
+    regs.efl = 0x200; // IF = 1
 }
 
 // only used by syscall create thread (EC+SC)
-Ec::Ec (mword eip, mword esp)
-{
-    cont = ret_user_iret;
-    regs.cs  = SEL_USER_CODE;
-    regs.ds  = SEL_USER_DATA;
-    regs.es  = SEL_USER_DATA;
-    regs.ss  = SEL_USER_DATA;
-    regs.efl = 0x200;           // IF = 1
+Ec::Ec(mword eip, mword esp, unsigned prio, Pd *p)
+    : cont(ret_user_iret), priority(prio), blocked(false), pd(p) {
+    regs.cs = SEL_USER_CODE;
+    regs.ds = SEL_USER_DATA;
+    regs.es = SEL_USER_DATA;
+    regs.ss = SEL_USER_DATA;
+    regs.efl = 0x200; // IF = 1
     regs.eip = eip;
     regs.esp = esp;
 }
 
-void Ec::ret_user_sysexit()
-{
-    asm volatile ("lea %0, %%esp;"
-                  "popa;"
-                  "sti;"
-                  "sysexit"
-                  : : "m" (current->regs) : "memory");
+void Ec::ret_user_sysexit() {
+    asm volatile("lea %0, %%esp;"
+                 "popa;"
+                 "sti;"
+                 "sysexit"
+                 :
+                 : "m"(current->regs)
+                 : "memory");
 
     UNREACHED;
 }
 
-void Ec::ret_user_iret()
-{
-    asm volatile ("lea %0, %%esp;"
-                  "popa;"
-                  "pop %%gs;"
-                  "pop %%fs;"
-                  "pop %%es;"
-                  "pop %%ds;"
-                  "add $8, %%esp;"
-                  "iret"
-                  : : "m" (current->regs) : "memory");
+void Ec::ret_user_iret() {
+
+    // Dump all registers for debugging purposes
+    asm volatile("lea %0, %%esp;"
+                 "popa;"
+                 "pop %%gs;"
+                 "pop %%fs;"
+                 "pop %%es;"
+                 "pop %%ds;"
+                 "add $8, %%esp;"
+                 "iret"
+                 :
+                 : "m"(current->regs)
+                 : "memory");
 
     UNREACHED;
 }
 
-void Ec::root_invoke()
-{
+void Ec::root_invoke() {
     // find multi boot info
-    Multiboot * mbi = static_cast<Multiboot *>(Ptab::remap (current->regs.eax));
+    Multiboot *mbi = static_cast<Multiboot *>(Ptab::remap(current->regs.eax));
 
     if (!(mbi->flags & 8) || (mbi->mods_count != 1))
-        panic ("exactly ONE multi boot module is required.\n");
+        panic("exactly ONE multi boot module is required.\n");
 
     // load module desciptor
-    Multiboot_module mod = *static_cast<Multiboot_module *>(Ptab::remap (mbi->mods_addr));
+    Multiboot_module mod =
+        *static_cast<Multiboot_module *>(Ptab::remap(mbi->mods_addr));
 
-    printf ("load module from %x - %x (%u bytes) : ", mod.mod_start, mod.mod_end, mod.mod_end - mod.mod_start);
-    char * cmd = static_cast<char *>(Ptab::remap (mod.cmdline));
-    printf ("%s\n",cmd);
+    printf("load module from %x - %x (%u bytes) : ", mod.mod_start, mod.mod_end,
+           mod.mod_end - mod.mod_start);
+    char *cmd = static_cast<char *>(Ptab::remap(mod.cmdline));
+    printf("%s\n", cmd);
 
     // remap elf header
-    Eh * e = static_cast<Eh *>(Ptab::remap (mod.mod_start));
+    Eh *e = static_cast<Eh *>(Ptab::remap(mod.mod_start));
     if (e->ei_magic != 0x464c457f || e->ei_data != 1 || e->type != 2)
-        panic ("No ELF\n");
+        panic("No ELF\n");
 
     unsigned count = e->ph_count;
     current->regs.eip = e->entry;
 
     // remap program headers
-    Ph * p = static_cast<Ph *>(Ptab::remap (mod.mod_start + e->ph_offset));
+    Ph *p = static_cast<Ph *>(Ptab::remap(mod.mod_start + e->ph_offset));
 
     for (; count--; p++) {
 
@@ -108,15 +113,16 @@ void Ec::root_invoke()
 
             unsigned attr = p->flags & Ph::PF_W ? 7 : 5;
 
-            if (p->f_size != p->m_size || p->v_addr % PAGE_SIZE != p->f_offs % PAGE_SIZE)
-                panic ("Bad ELF\n");
+            if (p->f_size != p->m_size ||
+                p->v_addr % PAGE_SIZE != p->f_offs % PAGE_SIZE)
+                panic("Bad ELF\n");
 
-            mword phys = align_dn (p->f_offs + mod.mod_start, PAGE_SIZE);
-            mword virt = align_dn (p->v_addr, PAGE_SIZE);
-            mword size = align_up (p->f_size, PAGE_SIZE);
+            mword phys = align_dn(p->f_offs + mod.mod_start, PAGE_SIZE);
+            mword virt = align_dn(p->v_addr, PAGE_SIZE);
+            mword size = align_up(p->f_size, PAGE_SIZE);
 
             while (size) {
-                Ptab::insert_mapping (virt, phys, attr);
+                Ptab::insert_mapping(virt, phys, attr);
                 virt += PAGE_SIZE;
                 phys += PAGE_SIZE;
                 size -= PAGE_SIZE;
@@ -124,31 +130,32 @@ void Ec::root_invoke()
         }
     }
 
+    // Push the root process into our stack
+    Scheduler::sched.schedule(current);
+    // Set a normal return for when yielded back
+    current->cont = ret_user_iret;
+
     ret_user_iret();
 
     FAIL;
 }
 
-void Ec::handle_tss()
-{
-    panic ("Task gate invoked\n");
-}
+void Ec::handle_tss() { panic("Task gate invoked\n"); }
 
-void Ec::syscall_handler (uint8 n)
-{
-    switch (static_cast<SyscallNum>(n)) {
+void Ec::handle_syscall(syscall_frame *f) {
+    // By convention
+    // EAX = pointer to the syscall frame
+    // ECX = pointer to user stack
+    // EDX = return address to the user code
+    // Last pushed element references syscall arguments
 
-    case SyscallNum::SYS_DUMP:
-        sys_dump();
-        break;
+    SyscallNum num = f->num;
 
-    case SyscallNum::SYS_PRINT:
-        sys_print();
-        break;
-
-    default:
-        printf ("syscall %d - unknown\n", n);
-        break;
+    if (num < SyscallNum::MAX_SYSCALL &&
+        syscall_table[static_cast<unsigned>(num)]) {
+        syscall_table[static_cast<unsigned>(num)]->handle(f);
+    } else {
+        printf("syscall %d - unknown\n", static_cast<int>(num));
     }
 
     ret_user_sysexit();
@@ -156,23 +163,7 @@ void Ec::syscall_handler (uint8 n)
     UNREACHED;
 }
 
-void Ec::sys_dump()
-{
-    printf ("EC:%p SYS_DUMP : %#lx, %#lx\n", current, current->sys_regs()->esi, current->sys_regs()->edi);
-
-    ret_user_sysexit();
-}
-
-void Ec::sys_print()
-{
-    const char *user_str = reinterpret_cast<const char *>(current->sys_regs()->esi);
-    printf ("%s", user_str);
-
-    ret_user_sysexit();
-}
-
-bool Ec::handle_exc_ts (Exc_regs *r)
-{
+bool Ec::handle_exc_ts(Exc_regs *r) {
     if (r->user())
         return false;
 
@@ -182,18 +173,30 @@ bool Ec::handle_exc_ts (Exc_regs *r)
     return true;
 }
 
-void Ec::handle_exc (Exc_regs *r)
-{
-    if (r->vec == Cpu::EXC_TS && handle_exc_ts (r))
+void Ec::handle_exc(Exc_regs *r) {
+    if (r->vec == Cpu::EXC_TS && handle_exc_ts(r))
         return;
 
     if (r->vec == Cpu::EXC_GP)
-        panic ("%s GP (EIP=%#lx CR2=%#lx)\n", r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
+        panic("%s GP (EIP=%#lx CR2=%#lx)\n",
+              r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
 
-    if (r->vec == Cpu::EXC_PF)
-        panic ("%s PF (EIP=%#lx CR2=%#lx)\n", r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
+    if (r->vec == Cpu::EXC_PF) {
+        bool is_main_stack_guard = (r->cr2 >= USER_MAIN_STACK_START &&
+                                    r->cr2 < USER_MAIN_STACK_START + PAGE_SIZE);
+        bool is_heap_stack_guard =
+            (r->cr2 >= USER_HEAP_START && r->cr2 < USER_HEAP_END &&
+             ((r->cr2 - USER_HEAP_START) % USER_STACK_SIZE < PAGE_SIZE));
 
-    panic ("%s EXC %#lx (EIP=%#lx CR2=%#lx)\n", r->eip < LINK_ADDR ? "User" : "Kernel", r->vec, r->eip, r->cr2);
+        if (is_main_stack_guard || is_heap_stack_guard)
+            panic("User Stack Overflow (EIP=%#lx CR2=%#lx)\n", r->eip, r->cr2);
+
+        panic("%s PF (EIP=%#lx CR2=%#lx)\n",
+              r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
+    }
+
+    panic("%s EXC %#lx (EIP=%#lx CR2=%#lx)\n",
+          r->eip < LINK_ADDR ? "User" : "Kernel", r->vec, r->eip, r->cr2);
 
     UNREACHED;
 }

@@ -17,41 +17,43 @@
  */
 
 #include "compiler.h"
-#include "types.h"
+#include "cpu.h"
+#include "ec.h"
 #include "extern.h"
-#include "memory.h"
-#include "string.h"
-#include "stdio.h"
 #include "gdt.h"
-#include "tss.h"
 #include "gsi.h"
 #include "idt.h"
-#include "kalloc.h"
-#include "assert.h"
-#include "cpu.h"
-#include "ptab.h"
-#include "ec.h"
 #include "io.h"
+#include "kalloc.h"
+#include "memory.h"
 #include "msr.h"
+#include "pd.h"
+#include "ptab.h"
+#include "stdio.h"
+#include "tss.h"
+#include "types.h"
 
 char const *version = "NOVA Microhypervisor 0.3 (Cleetwood Cove)";
 
-extern "C"
-void init ()
-{
-    for (void (**func)() = &CTORS_E; func != &CTORS_G; (*--func)()) ;
+extern "C" void init() {
+    for (void (**func)() = &CTORS_E; func != &CTORS_G; (*--func)())
+        ;
 
     serial.init();
 
-     // Now we're ready to talk to the world
-    printf ("\f%s: %s %s [%s]\n\n", version, __DATE__, __TIME__, COMPILER_STRING);
+    // Now we're ready to talk to the world
+    printf("\f%s: %s %s [%s]\n\n", version, __DATE__, __TIME__,
+           COMPILER_STRING);
 
-    mword iobm = Kalloc::virt2phys (Kalloc::allocator.alloc_page(2,Kalloc::FILL_1));
-    Ptab::insert_mapping (KSTCK_ADDR, Kalloc::virt2phys (Kalloc::allocator.alloc_page(1)), 0x23);
-    Ptab::insert_mapping (IOBMP_SADDR, iobm, 0x23);
-    Ptab::insert_mapping (IOBMP_SADDR + PAGE_SIZE, iobm + PAGE_SIZE, 0x23);
+    mword iobm =
+        Kalloc::virt2phys(Kalloc::allocator.alloc_page(2, Kalloc::FILL_1));
+    Ptab::insert_mapping(
+        KSTCK_ADDR, Kalloc::virt2phys(Kalloc::allocator.alloc_page(1)), 0x23);
+    Ptab::insert_mapping(IOBMP_SADDR, iobm, 0x23);
+    Ptab::insert_mapping(IOBMP_SADDR + PAGE_SIZE, iobm + PAGE_SIZE, 0x23);
 
-    for (void (**func)() = &CTORS_G; func != &CTORS_L; (*--func)()) ;
+    for (void (**func)() = &CTORS_G; func != &CTORS_L; (*--func)())
+        ;
 
     Gdt::build();
     Tss::build();
@@ -63,30 +65,32 @@ void init ()
     Idt::load();
 
     // offset and mask all IRQs
-    Io::out<uint8> (0x20, 0x11);
-    Io::out<uint8> (0x21, VEC_GSI);
-    Io::out<uint8> (0x21, 0x4);
-    Io::out<uint8> (0x21, 0x1);
-    Io::out<uint8> (0x21, 0xff);
+    Io::out<uint8>(0x20, 0x11);
+    Io::out<uint8>(0x21, VEC_GSI);
+    Io::out<uint8>(0x21, 0x4);
+    Io::out<uint8>(0x21, 0x1);
+    Io::out<uint8>(0x21, 0xff);
 
     // setup sysenter
-    Msr::write<mword>(Msr::IA32_SYSENTER_CS,  SEL_KERN_CODE);
-    Msr::write<mword>(Msr::IA32_SYSENTER_ESP, reinterpret_cast<mword>(&Tss::run.sp0));
-    Msr::write<mword>(Msr::IA32_SYSENTER_EIP, reinterpret_cast<mword>(&entry_sysenter));
+    Msr::write<mword>(Msr::IA32_SYSENTER_CS, SEL_KERN_CODE);
+    Msr::write<mword>(Msr::IA32_SYSENTER_ESP,
+                      reinterpret_cast<mword>(&Tss::run.sp0));
+    Msr::write<mword>(Msr::IA32_SYSENTER_EIP,
+                      reinterpret_cast<mword>(&entry_sysenter));
 }
 
-extern "C" REGPARM (1) NORETURN
-void bootstrap (mword addr)
-{
+extern "C" REGPARM(1) NORETURN void bootstrap(mword addr) {
     // unmap everything below 3G : 0 - LOAD_E
-    mword* pdir = static_cast<mword*>(Kalloc::phys2virt(Cpu::cr3()));
+    mword *pdir = static_cast<mword *>(Kalloc::phys2virt(Cpu::cr3()));
     mword e = reinterpret_cast<mword>(&LOAD_E) >> 22;
-    for (mword a = 0; a <= e; pdir[a++] = 0) ;
+    for (mword a = 0; a <= e; pdir[a++] = 0)
+        ;
     Cpu::flush();
 
-    Ec::current = new Ec (Ec::root_invoke, addr);
+    Pd *root_pd = new Pd(); // create root PD
+
+    Ec::current = new Ec(Ec::root_invoke, addr, root_pd); // create root EC
     Ec::current->make_current();
 
     UNREACHED;
 }
-

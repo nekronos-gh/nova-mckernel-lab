@@ -7,6 +7,11 @@ USER_STACK_PAGES = 2048;                                /* 8MB */
 USER_STACK_SIZE = (USER_STACK_PAGES + 1) * PAGE_SIZE;   /* +1 guard page */
 HEAP_SIZE = USER_STACK_SIZE * 16;              
 
+MAX_CAPS = 8;
+BUFFER_SIZE = 4;
+BUFFER_FREE = MAX_CAPS + 1;
+
+
 PHDRS
     {
     text    PT_LOAD FLAGS(5); /* RX */
@@ -29,6 +34,11 @@ SECTIONS
     .data :
         {
         . = ALIGN(PAGE_SIZE);                                            
+        /* Using shared memory for IPC */
+        _ipc_buffer_status = .;
+        LONG(BUFFER_FREE);
+        _ipc_buffer = ALIGN(4);                                            
+        . += BUFFER_SIZE;
 
         /* Data & BSS */
         *(.data .data.*);

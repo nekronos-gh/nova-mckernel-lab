@@ -29,6 +29,4 @@ static void add_capability(unsigned cap_slot) {
     syscall(SYS_ADD_CAP, cap_slot);
 }
 
-static int get_cap_slot() {
-    return static_cast<int>(syscall(SYS_GET_CAP_SLOT));
-}
+static unsigned get_cap_slot() { return syscall(SYS_GET_CAP_SLOT); }

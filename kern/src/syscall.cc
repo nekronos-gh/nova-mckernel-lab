@@ -140,7 +140,6 @@ class SyscallGetCapSlot : public Syscall {
                 return;
             }
         }
-        Ec::current->sys_regs()->eax = static_cast<mword>(-1);
     }
 };
 

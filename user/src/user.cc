@@ -12,6 +12,7 @@
 // different memory spaces.
 
 NORETURN void hi_thread_1() {
+    printf("hi_thread_1 cap slot: %d\n", get_cap_slot());
     // 1st thread to run, should print first
     printf("A man who ");
     yield();
@@ -83,6 +84,8 @@ EXTERN_C NORETURN void main_func() {
     printf("\n----------------------\n");
 
     // Capability test: slot 0 (hi_thread_1)
+    printf("main_func cap slot:    %d\n", get_cap_slot());
+
     if (check_capability(0))
         printf("cap slot 0 before grant: allowed\n");
     else

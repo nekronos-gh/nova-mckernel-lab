@@ -131,6 +131,19 @@ class SyscallAddCap : public Syscall {
     }
 };
 
+class SyscallGetCapSlot : public Syscall {
+  public:
+    void handle(syscall_frame *) override {
+        for (unsigned i = 0; i < MAX_CAPS; i++) {
+            if (Ec::current->pd->get_cap(i) == Ec::current) {
+                Ec::current->sys_regs()->eax = i;
+                return;
+            }
+        }
+        Ec::current->sys_regs()->eax = static_cast<mword>(-1);
+    }
+};
+
 static SyscallMmap sys_mmap_h;
 static SyscallDump sys_dump_h;
 static SyscallPrint sys_print_h;
@@ -140,6 +153,7 @@ static SyscallBlock sys_block_h;
 static SyscallUnblock sys_unblock_h;
 static SyscallCheckCap sys_check_cap_h;
 static SyscallAddCap sys_add_cap_h;
+static SyscallGetCapSlot sys_get_cap_slot_h;
 
 Syscall *syscall_table[static_cast<unsigned>(SyscallNum::MAX_SYSCALL)] = {
     [static_cast<unsigned>(SyscallNum::SYS_MMAP)] = &sys_mmap_h,
@@ -150,4 +164,6 @@ Syscall *syscall_table[static_cast<unsigned>(SyscallNum::MAX_SYSCALL)] = {
     [static_cast<unsigned>(SyscallNum::SYS_BLOCK)] = &sys_block_h,
     [static_cast<unsigned>(SyscallNum::SYS_UNBLOCK)] = &sys_unblock_h,
     [static_cast<unsigned>(SyscallNum::SYS_CHECK_CAP)] = &sys_check_cap_h,
-    [static_cast<unsigned>(SyscallNum::SYS_ADD_CAP)] = &sys_add_cap_h};
+    [static_cast<unsigned>(SyscallNum::SYS_ADD_CAP)] = &sys_add_cap_h,
+    [static_cast<unsigned>(SyscallNum::SYS_GET_CAP_SLOT)] =
+        &sys_get_cap_slot_h};

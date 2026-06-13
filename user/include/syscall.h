@@ -10,6 +10,8 @@ enum SyscallNum : uint8 {
     SYS_YIELD = 4,
     SYS_BLOCK = 5,
     SYS_UNBLOCK = 6,
+    SYS_CHECK_CAP = 7,
+    SYS_ADD_CAP = 8,
     MAX_SYSCALL
 };
 

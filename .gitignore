@@ -6,5 +6,6 @@ user/build/user.nova.debug
 user/build/user.nova.debug.map
 
 AGENTS.md
+CLAUDE.md
 
 compile_commands.json

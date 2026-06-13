@@ -82,6 +82,19 @@ EXTERN_C NORETURN void main_func() {
 
     printf("\n----------------------\n");
 
+    // Capability test: slot 0 (hi_thread_1)
+    if (check_capability(0))
+        printf("cap slot 0 before grant: allowed\n");
+    else
+        printf("cap slot 0 before grant: not allowed\n");
+
+    add_capability(0);
+
+    if (check_capability(0))
+        printf("cap slot 0 after grant:  allowed\n");
+    else
+        printf("cap slot 0 after grant:  not allowed\n");
+
     while (1)
         ;
 }

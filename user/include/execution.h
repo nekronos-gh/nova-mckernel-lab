@@ -20,3 +20,11 @@ static void block(unsigned tid) { syscall(SYS_BLOCK, tid); }
 static void unblock() { syscall(SYS_UNBLOCK); }
 
 static void unblock(unsigned tid) { syscall(SYS_UNBLOCK, tid); }
+
+static bool check_capability(unsigned cap_slot) {
+    return syscall(SYS_CHECK_CAP, cap_slot) != 0;
+}
+
+static void add_capability(unsigned cap_slot) {
+    syscall(SYS_ADD_CAP, cap_slot);
+}

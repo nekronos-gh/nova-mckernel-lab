@@ -11,6 +11,8 @@ enum SyscallNum : uint8 {
     SYS_YIELD = 4,
     SYS_BLOCK = 5,
     SYS_UNBLOCK = 6,
+    SYS_CHECK_CAP = 7,
+    SYS_ADD_CAP = 8,
     MAX_SYSCALL
 };
 
@@ -51,6 +53,14 @@ struct syscall_block : public syscall_frame {
 };
 
 struct syscall_unblock : public syscall_frame {
+    unsigned capability;
+};
+
+struct syscall_check_cap : public syscall_frame {
+    unsigned capability;
+};
+
+struct syscall_add_cap : public syscall_frame {
     unsigned capability;
 };
 

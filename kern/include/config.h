@@ -18,7 +18,8 @@
 
 #pragma once
 
-#define NUM_IRQ         16
-#define NUM_EXC         32
-#define NUM_GSI         128
-#define NUM_LVT         1
+#define NUM_IRQ 16
+#define NUM_EXC 32
+#define NUM_GSI 128
+#define NUM_LVT 1
+#define MAX_CAPS 8

@@ -19,6 +19,7 @@
 #pragma once
 
 #include "compiler.h"
+#include "config.h"
 #include "kalloc.h"
 #include "memory.h"
 #include "regs.h"
@@ -35,6 +36,10 @@ class Ec {
     void (*cont)();
     Exc_regs regs;
 
+  public:
+    uint8 capabilities[MAX_CAPS] = {};
+
+  private:
     REGPARM(1)
     static void handle_exc(Exc_regs *) asm("exc_handler");
 

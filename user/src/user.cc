@@ -9,8 +9,10 @@
 // WALL OF SHAME
 // TODO: Starvation of low-priority ECs; implement aging or preemptive
 // scheduling.
-// TODO: Only one PD for now (root): extend to multiple execution contexts in
-// different memory spaces.
+// TODO: Tree of PDs, but all share same memmory space. Must run in different
+// memory spaces for isolation.
+// INFO: Since all ECs are running in the same PD,
+// we have a check_capability faeature to control accesses
 // INFO: IF EC1 writes to EC2 and vice-versa, then Deadlock occurs.
 // TODO: Implement IPC between PDs using portals and Scheduling Contexts
 // --------------
@@ -86,6 +88,17 @@ EXTERN_C NORETURN void main_func() {
            reinterpret_cast<mword>(&_ipc_buffer_status));
     printf("[user::main]\t starting map-reduce demo\n");
 
+    // Create child protection domains
+    int mapper_pd = create_pd();
+    int reducer_pd = create_pd();
+
+    if (mapper_pd < 0 || reducer_pd < 0) {
+        printf("[user::main]\t ERROR: create_pd failed (%d, %d)\n", mapper_pd,
+               reducer_pd);
+        while (1)
+            ;
+    }
+
     // Create reducer
     int r_slot = create_ec(reducer, /*priority=*/0, REDUCER_SLOT);
     if (r_slot < 0) {
@@ -93,6 +106,11 @@ EXTERN_C NORETURN void main_func() {
         while (1)
             ;
     }
+
+    // Delegate root-PD slot to reducer-PD slot 0
+    delegate_cap(static_cast<unsigned>(reducer_pd),
+                 static_cast<unsigned>(r_slot),
+                 /*dst_slot=*/0);
 
     // Create mappers
     void (*mapper_funcs[NUM_MAPPERS])() = {mapper0, mapper1, mapper2};
@@ -106,6 +124,11 @@ EXTERN_C NORETURN void main_func() {
             while (1)
                 ;
         }
+        // Delegate root-PD slot to mapper-PD slot i
+        delegate_cap(static_cast<unsigned>(mapper_pd),
+                     static_cast<unsigned>(slot),
+                     /*dst_slot=*/i);
+
         // Main must be able to write to all mappers
         add_capability(static_cast<unsigned>(slot));
         printf("[user::main]\t created mapper%u at cap_slot %d\n", i, slot);

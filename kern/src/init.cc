@@ -87,7 +87,7 @@ extern "C" REGPARM(1) NORETURN void bootstrap(mword addr) {
         ;
     Cpu::flush();
 
-    Pd *root_pd = new Pd(); // create root PD
+    Pd *root_pd = new Pd(nullptr); // create root PD
 
     Ec::current = new Ec(Ec::root_invoke, addr, root_pd); // create root EC
     root_pd->set_cap(0, Ec::current);

@@ -36,9 +36,9 @@ SECTIONS
         . = ALIGN(PAGE_SIZE);                                            
         /* Using shared memory for IPC */
         _ipc_buffer_status = .;
-        LONG(BUFFER_FREE);
+        . += 4 * MAX_CAPS;
         _ipc_buffer = ALIGN(4);                                            
-        . += BUFFER_SIZE;
+        . += BUFFER_SIZE * MAX_CAPS;
 
         /* Data & BSS */
         *(.data .data.*);

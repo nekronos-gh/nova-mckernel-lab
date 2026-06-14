@@ -8,7 +8,8 @@ UserMemPool UserMemPool::heap(reinterpret_cast<mword>(&_mempool_f),
 
 void *UserMemPool::alloc_stack() {
     if (begin + USER_STACK_SIZE > end) {
-        printf("[user::mempool] Out of memory - begin 0x%x: start 0x%x:\n",
+        printf("[user::UserMemPool::alloc_stack]\t Out of memory - begin 0x%x: "
+               "end 0x%x:\n",
                begin, end);
         return nullptr;
     }

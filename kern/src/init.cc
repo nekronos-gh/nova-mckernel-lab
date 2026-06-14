@@ -42,7 +42,7 @@ extern "C" void init() {
     serial.init();
 
     // Now we're ready to talk to the world
-    printf("\f%s: %s %s [%s]\n\n", version, __DATE__, __TIME__,
+    printf("[kern::init]\t %s: %s %s [%s]\n\n", version, __DATE__, __TIME__,
            COMPILER_STRING);
 
     mword iobm =

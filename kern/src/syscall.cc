@@ -25,8 +25,9 @@ class SyscallMmap : public Syscall {
 class SyscallDump : public Syscall {
   public:
     void handle(syscall_frame *) override {
-        printf("EC:%p SYS_DUMP : %#lx, %#lx\n", Ec::current,
-               Ec::current->sys_regs()->esi, Ec::current->sys_regs()->edi);
+        printf("[kern::SyscallDump::handle]\t EC:%p SYS_DUMP : %#lx, %#lx\n",
+               Ec::current, Ec::current->sys_regs()->esi,
+               Ec::current->sys_regs()->edi);
     }
 };
 

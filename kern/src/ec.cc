@@ -93,10 +93,10 @@ void Ec::root_invoke() {
     Multiboot_module mod =
         *static_cast<Multiboot_module *>(Ptab::remap(mbi->mods_addr));
 
-    printf("load module from %x - %x (%u bytes) : ", mod.mod_start, mod.mod_end,
-           mod.mod_end - mod.mod_start);
+    printf("[kern::root_invoke]\t load module from %x - %x (%u bytes) : ",
+           mod.mod_start, mod.mod_end, mod.mod_end - mod.mod_start);
     char *cmd = static_cast<char *>(Ptab::remap(mod.cmdline));
-    printf("%s\n", cmd);
+    printf("[kern::root_invoke]\t %s\n", cmd);
 
     // remap elf header
     Eh *e = static_cast<Eh *>(Ptab::remap(mod.mod_start));
@@ -157,7 +157,8 @@ void Ec::handle_syscall(syscall_frame *f) {
         syscall_table[static_cast<unsigned>(num)]) {
         syscall_table[static_cast<unsigned>(num)]->handle(f);
     } else {
-        printf("syscall %d - unknown\n", static_cast<int>(num));
+        printf("[kern::handle_syscall]\t unknown syscall %d\n",
+               static_cast<int>(num));
     }
 
     ret_user_sysexit();

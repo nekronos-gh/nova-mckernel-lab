@@ -1,7 +1,5 @@
 #pragma once
 
-#include "types.h"
-
 enum SyscallNum : uint8 {
     SYS_MMAP = 0,
     SYS_DUMP = 1,
@@ -10,11 +8,10 @@ enum SyscallNum : uint8 {
     SYS_YIELD = 4,
     SYS_BLOCK = 5,
     SYS_UNBLOCK = 6,
-    SYS_CHECK_CAP = 7,
-    SYS_ADD_CAP = 8,
-    SYS_GET_CAP_SLOT = 9,
-    SYS_CREATE_PD = 10,
-    SYS_DELEGATE_CAP = 11,
+    SYS_CREATE_PD = 7,
+    SYS_DELEGATE_CAP = 8,
+    SYS_IPC_SEND = 9,
+    SYS_IPC_RECV = 10,
     MAX_SYSCALL
 };
 

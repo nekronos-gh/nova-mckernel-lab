@@ -10,7 +10,7 @@ class Pd {
   public:
     Ec *caps[MAX_CAPS] = {};     // Capability table
     Pd *parent;                  // nullptr for root PD
-    Pd *children[MAX_CAPS] = {}; // child PDs (reuse MAX_CAPS as a simple limit)
+    Pd *children[MAX_CAPS] = {}; // child PDs
 
     explicit Pd(Pd *p = nullptr) : parent(p) {}
 

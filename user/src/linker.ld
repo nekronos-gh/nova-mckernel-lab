@@ -7,11 +7,6 @@ USER_STACK_PAGES = 2048;                                /* 8MB */
 USER_STACK_SIZE = (USER_STACK_PAGES + 1) * PAGE_SIZE;   /* +1 guard page */
 HEAP_SIZE = USER_STACK_SIZE * 16;              
 
-MAX_CAPS = 8;
-BUFFER_SIZE = 4;
-BUFFER_FREE = MAX_CAPS + 1;
-
-
 PHDRS
     {
     text    PT_LOAD FLAGS(5); /* RX */
@@ -34,27 +29,21 @@ SECTIONS
     .data :
         {
         . = ALIGN(PAGE_SIZE);                                            
-        /* Using shared memory for IPC */
-        _ipc_buffer_status = .;
-        . += 4 * MAX_CAPS;
-        _ipc_buffer = ALIGN(4);                                            
-        . += BUFFER_SIZE * MAX_CAPS;
-
         /* Data & BSS */
         *(.data .data.*);
         *(.bss .bss.*);
         . = ALIGN(PAGE_SIZE);
     } : data 
 
-    /* Heap section */
+    /* Mempool section */
     /* Clone stacks */
     .heap (NOLOAD) : {
-        _heap_f = .;
+        _mempool_f = .;
         . += HEAP_SIZE;
-        _heap_e = .;
+        _mempool_e = .;
     }
 
-    /* Main stack outside of heap */
+    /* Main stack outside of mempool */
     .stack (NOLOAD) : {
         . = ALIGN(PAGE_SIZE);
         _user_stack_bottom = .;

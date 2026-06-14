@@ -108,42 +108,6 @@ class SyscallUnblock : public Syscall {
     }
 };
 
-class SyscallCheckCap : public Syscall {
-  public:
-    void handle(syscall_frame *f) override {
-        syscall_check_cap *frame = static_cast<syscall_check_cap *>(f);
-        unsigned slot = frame->capability;
-        if (slot >= MAX_CAPS) {
-            Ec::current->sys_regs()->eax = 0;
-            return;
-        }
-        Ec::current->sys_regs()->eax = Ec::current->capabilities[slot];
-    }
-};
-
-class SyscallAddCap : public Syscall {
-  public:
-    void handle(syscall_frame *f) override {
-        syscall_add_cap *frame = static_cast<syscall_add_cap *>(f);
-        unsigned slot = frame->capability;
-        if (slot >= MAX_CAPS)
-            return;
-        Ec::current->capabilities[slot] = 1;
-    }
-};
-
-class SyscallGetCapSlot : public Syscall {
-  public:
-    void handle(syscall_frame *) override {
-        for (unsigned i = 0; i < MAX_CAPS; i++) {
-            if (Ec::current->pd->get_cap(i) == Ec::current) {
-                Ec::current->sys_regs()->eax = i;
-                return;
-            }
-        }
-    }
-};
-
 class SyscallCreatePD : public Syscall {
   public:
     void handle(syscall_frame *) override {
@@ -204,6 +168,72 @@ class SyscallDelegateCap : public Syscall {
     }
 };
 
+class SyscallIpcSend : public Syscall {
+  public:
+    void handle(syscall_frame *f) override {
+        syscall_ipc_send *frame = static_cast<syscall_ipc_send *>(f);
+        Ec *caller = Ec::current;
+        // Inter PD resolution
+        Ec *target = caller->pd->get_cap(frame->target_cap);
+        if (!target) {
+            caller->sys_regs()->eax = static_cast<mword>(-1);
+            return;
+        }
+
+        // If target already waiting to receive
+        if (target->ipc_partner != nullptr && !target->ipc_sending) {
+            target->ipc_val = frame->value;
+            target->sys_regs()->eax = frame->value;
+            target->ipc_partner = nullptr;
+            caller->ipc_partner = nullptr;
+            Scheduler::sched.unblock(target);
+            return;
+        }
+
+        // Otherwise block ourselves until target receives
+        caller->ipc_val = frame->value;
+        caller->ipc_partner = target;
+        caller->ipc_sending = true;
+        Ec *next = Scheduler::sched.block(caller);
+        if (next)
+            next->make_current();
+
+        UNREACHED;
+    }
+};
+
+class SyscallIpcRecv : public Syscall {
+  public:
+    void handle(syscall_frame *) override {
+        Ec *caller = Ec::current;
+
+        // Scan the PD cap table for any EC whose trying to write
+        Pd *pd = caller->pd;
+        for (unsigned i = 0; i < MAX_CAPS; ++i) {
+            Ec *ec = pd->get_cap(i);
+            if (ec && ec->ipc_partner == caller && ec->ipc_sending) {
+                mword val = ec->ipc_val;
+                ec->ipc_partner = nullptr;
+                ec->ipc_sending = false;
+                caller->ipc_partner = nullptr;
+                caller->ipc_sending = false;
+                caller->sys_regs()->eax = val;
+                Scheduler::sched.unblock(ec);
+                return;
+            }
+        }
+
+        // No sender yet, block and wait
+        caller->ipc_partner = caller; // will be matched by sender
+        caller->ipc_sending = false;
+
+        Ec *next = Scheduler::sched.block(caller);
+        if (next)
+            next->make_current();
+        UNREACHED;
+    }
+};
+
 static SyscallMmap sys_mmap_h;
 static SyscallDump sys_dump_h;
 static SyscallPrint sys_print_h;
@@ -211,11 +241,10 @@ static SyscallCreateEC sys_create_ec_h;
 static SyscallYield sys_yield_h;
 static SyscallBlock sys_block_h;
 static SyscallUnblock sys_unblock_h;
-static SyscallCheckCap sys_check_cap_h;
-static SyscallAddCap sys_add_cap_h;
-static SyscallGetCapSlot sys_get_cap_slot_h;
 static SyscallCreatePD sys_create_pd_h;
 static SyscallDelegateCap sys_delegate_cap_h;
+static SyscallIpcSend sys_ipc_send_h;
+static SyscallIpcRecv sys_ipc_recv_h;
 
 Syscall *syscall_table[static_cast<unsigned>(SyscallNum::MAX_SYSCALL)] = {
     [static_cast<unsigned>(SyscallNum::SYS_MMAP)] = &sys_mmap_h,
@@ -225,10 +254,9 @@ Syscall *syscall_table[static_cast<unsigned>(SyscallNum::MAX_SYSCALL)] = {
     [static_cast<unsigned>(SyscallNum::SYS_YIELD)] = &sys_yield_h,
     [static_cast<unsigned>(SyscallNum::SYS_BLOCK)] = &sys_block_h,
     [static_cast<unsigned>(SyscallNum::SYS_UNBLOCK)] = &sys_unblock_h,
-    [static_cast<unsigned>(SyscallNum::SYS_CHECK_CAP)] = &sys_check_cap_h,
-    [static_cast<unsigned>(SyscallNum::SYS_ADD_CAP)] = &sys_add_cap_h,
-    [static_cast<unsigned>(SyscallNum::SYS_GET_CAP_SLOT)] = &sys_get_cap_slot_h,
     [static_cast<unsigned>(SyscallNum::SYS_CREATE_PD)] = &sys_create_pd_h,
     [static_cast<unsigned>(SyscallNum::SYS_DELEGATE_CAP)] = &sys_delegate_cap_h,
+    [static_cast<unsigned>(SyscallNum::SYS_IPC_SEND)] = &sys_ipc_send_h,
+    [static_cast<unsigned>(SyscallNum::SYS_IPC_RECV)] = &sys_ipc_recv_h,
 
 };

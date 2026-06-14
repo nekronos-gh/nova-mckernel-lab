@@ -29,7 +29,8 @@ Ec *Ec::current = 0;
 
 // solely used for root_invoke()
 Ec::Ec(void (*f)(), mword mbi, Pd *p)
-    : cont(f), priority(0), blocked(false), pd(p) {
+    : cont(f), priority(0), blocked(false), ipc_partner(nullptr), ipc_val(0),
+      ipc_sending(false), pd(p) {
     regs.eax = mbi;
     regs.cs = SEL_USER_CODE;
     regs.ds = SEL_USER_DATA;
@@ -40,7 +41,8 @@ Ec::Ec(void (*f)(), mword mbi, Pd *p)
 
 // only used by syscall create thread (EC+SC)
 Ec::Ec(mword eip, mword esp, unsigned prio, Pd *p)
-    : cont(ret_user_iret), priority(prio), blocked(false), pd(p) {
+    : cont(ret_user_iret), priority(prio), blocked(false), ipc_partner(nullptr),
+      ipc_val(0), ipc_sending(false), pd(p) {
     regs.cs = SEL_USER_CODE;
     regs.ds = SEL_USER_DATA;
     regs.es = SEL_USER_DATA;

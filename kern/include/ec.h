@@ -36,10 +36,6 @@ class Ec {
     void (*cont)();
     Exc_regs regs;
 
-  public:
-    uint8 capabilities[MAX_CAPS] = {};
-
-  private:
     REGPARM(1)
     static void handle_exc(Exc_regs *) asm("exc_handler");
 
@@ -51,6 +47,10 @@ class Ec {
   public:
     unsigned priority;
     bool blocked;
+
+    Ec *ipc_partner;
+    mword ipc_val;
+    bool ipc_sending;
 
     ALWAYS_INLINE
     inline Sys_regs *sys_regs() { return &regs; }

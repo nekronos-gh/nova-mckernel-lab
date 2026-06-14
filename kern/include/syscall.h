@@ -11,11 +11,10 @@ enum SyscallNum : uint8 {
     SYS_YIELD = 4,
     SYS_BLOCK = 5,
     SYS_UNBLOCK = 6,
-    SYS_CHECK_CAP = 7,
-    SYS_ADD_CAP = 8,
-    SYS_GET_CAP_SLOT = 9,
-    SYS_CREATE_PD = 10,
-    SYS_DELEGATE_CAP = 11,
+    SYS_CREATE_PD = 7,
+    SYS_DELEGATE_CAP = 8,
+    SYS_IPC_SEND = 9,
+    SYS_IPC_RECV = 10,
     MAX_SYSCALL
 };
 
@@ -30,9 +29,7 @@ struct syscall_mmap : public syscall_frame {
     mword virt_addr;
 };
 
-struct syscall_dump : public syscall_frame {
-    // No additional fields
-};
+struct syscall_dump : public syscall_frame {};
 
 struct syscall_print : public syscall_frame {
     const char *fmt;
@@ -60,19 +57,18 @@ struct syscall_unblock : public syscall_frame {
     unsigned capability;
 };
 
-struct syscall_check_cap : public syscall_frame {
-    unsigned capability;
-};
-
-struct syscall_add_cap : public syscall_frame {
-    unsigned capability;
-};
-
 struct syscall_delegate_cap : public syscall_frame {
     unsigned child_idx;
     unsigned src_slot;
     unsigned dst_slot;
 };
+
+struct syscall_ipc_send : public syscall_frame {
+    unsigned target_cap;
+    mword value;
+};
+
+struct syscall_ipc_recv : public syscall_frame {};
 
 class Syscall {
   public:

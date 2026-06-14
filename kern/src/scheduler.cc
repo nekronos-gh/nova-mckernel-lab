@@ -104,3 +104,33 @@ void Scheduler::unblock_all() {
         }
     }
 }
+
+void Scheduler::reprioritize(Ec *ec, unsigned new_prio) {
+    // Remove from current priority queue, update, re-insert
+    Queue &old_q = queues[ec->priority];
+    for (unsigned i = 0; i < old_q.count; i++) {
+        unsigned idx = (old_q.head + i) % MAX_ECS;
+        if (old_q.slots[idx] == ec) {
+            uint8 was_blocked = old_q.blocked[idx];
+            // Compact the queue: shift tail entries down by one
+            for (unsigned j = i; j + 1 < old_q.count; j++) {
+                unsigned cur = (old_q.head + j) % MAX_ECS;
+                unsigned nxt = (old_q.head + j + 1) % MAX_ECS;
+                old_q.slots[cur] = old_q.slots[nxt];
+                old_q.blocked[cur] = old_q.blocked[nxt];
+            }
+            old_q.tail = (old_q.tail - 1 + MAX_ECS) % MAX_ECS;
+            old_q.count--;
+            // Insert into new priority queue with same blocked state
+            ec->priority = new_prio;
+            Queue &new_q = queues[new_prio];
+            new_q.slots[new_q.tail] = ec;
+            new_q.blocked[new_q.tail] = was_blocked;
+            new_q.tail = (new_q.tail + 1) % MAX_ECS;
+            new_q.count++;
+            return;
+        }
+    }
+    // EC not in a queue just update field
+    ec->priority = new_prio;
+}

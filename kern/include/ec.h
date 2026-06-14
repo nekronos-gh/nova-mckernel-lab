@@ -46,6 +46,7 @@ class Ec {
 
   public:
     unsigned priority;
+    unsigned saved_priority = 0;
     bool blocked;
 
     Ec *ipc_partner;

@@ -186,11 +186,17 @@ class SyscallIpcSend : public Syscall {
             target->sys_regs()->eax = frame->value;
             target->ipc_partner = nullptr;
             caller->ipc_partner = nullptr;
+            // Inherit priority from caller until the value is read
+            if (target->priority > caller->priority) {
+                target->saved_priority = target->priority;
+                Scheduler::sched.reprioritize(target, caller->priority);
+            }
             Scheduler::sched.unblock(target);
             return;
         }
 
         // Otherwise block ourselves until target receives
+
         caller->ipc_val = frame->value;
         caller->ipc_partner = target;
         caller->ipc_sending = true;
@@ -210,15 +216,23 @@ class SyscallIpcRecv : public Syscall {
         // Scan the PD cap table for any EC whose trying to write
         Pd *pd = caller->pd;
         for (unsigned i = 0; i < MAX_CAPS; ++i) {
-            Ec *ec = pd->get_cap(i);
-            if (ec && ec->ipc_partner == caller && ec->ipc_sending) {
-                mword val = ec->ipc_val;
-                ec->ipc_partner = nullptr;
-                ec->ipc_sending = false;
+            Ec *writer = pd->get_cap(i);
+            if (writer && writer->ipc_partner == caller &&
+                writer->ipc_sending) {
+                mword val = writer->ipc_val;
+                // Clear data
+                writer->ipc_partner = nullptr;
+                writer->ipc_sending = false;
                 caller->ipc_partner = nullptr;
                 caller->ipc_sending = false;
+                // Return the value
                 caller->sys_regs()->eax = val;
-                Scheduler::sched.unblock(ec);
+                if (caller->saved_priority != caller->priority) {
+                    Scheduler::sched.reprioritize(caller,
+                                                  caller->saved_priority);
+                }
+
+                Scheduler::sched.unblock(writer);
                 return;
             }
         }

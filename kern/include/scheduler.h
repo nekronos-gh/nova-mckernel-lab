@@ -26,4 +26,6 @@ class Scheduler {
     Ec *block(Ec *ec);
     void unblock(Ec *ec);
     void unblock_all();
+
+    void reprioritize(Ec *ec, unsigned new_prio);
 };

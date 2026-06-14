@@ -2,7 +2,6 @@
 #include "ipc.h"
 #include "pd.h"
 #include "stdio.h"
-#include "types.h"
 
 #define NORETURN __attribute__((noreturn))
 #define EXTERN_C extern "C"
@@ -95,8 +94,8 @@ EXTERN_C NORETURN void main_func() {
             ;
     }
 
-    // Create reducer
-    int r_slot = create_ec(reducer, /*priority=*/0, REDUCER_SLOT);
+    // Create reducer with lower priority
+    int r_slot = create_ec(reducer, /*priority=*/1, REDUCER_SLOT);
     if (r_slot < 0) {
         printf("[user::main]\t ERROR: failed to create reducer\n");
         while (1)

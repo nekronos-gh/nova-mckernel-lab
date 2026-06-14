@@ -16,91 +16,90 @@
  * GNU General Public License version 2 for more details.
  */
 
-//#include "acpi.h"
-//#include "ec.h"
+// #include "acpi.h"
+// #include "ec.h"
 #include "lapic.h"
 #include "msr.h"
-//#include "rcu.h"
-#include "vectors.h"
+// #include "rcu.h"
 #include "assert.h"
+#include "vectors.h"
 
-unsigned    Lapic::freq_tsc;
-unsigned    Lapic::freq_bus;
-//uint8       Lapic::apic_id[NUM_CPU];
+unsigned Lapic::freq_tsc;
+unsigned Lapic::freq_bus;
+// uint8       Lapic::apic_id[NUM_CPU];
 
-void Lapic::init()
-{
-    assert (0);
-/*
-    Paddr apic_base = Msr::read<Paddr>(Msr::IA32_APIC_BASE);
+void Lapic::init() {
+    assert(0);
+    /*
+        Paddr apic_base = Msr::read<Paddr>(Msr::IA32_APIC_BASE);
 
-    Pd::kern.Space_mem::delreg (apic_base & ~PAGE_MASK);
-    Hptp (Hpt::current()).update (LAPIC_ADDR, 0, Hpt::HPT_NX | Hpt::HPT_G | Hpt::HPT_UC | Hpt::HPT_W | Hpt::HPT_P, apic_base & ~PAGE_MASK);
+        Pd::kern.Space_mem::delreg (apic_base & ~PAGE_MASK);
+        Hptp (Hpt::current()).update (LAPIC_ADDR, 0, Hpt::HPT_NX | Hpt::HPT_G |
+       Hpt::HPT_UC | Hpt::HPT_W | Hpt::HPT_P, apic_base & ~PAGE_MASK);
 
-    Msr::write (Msr::IA32_APIC_BASE, apic_base | 0x800);
+        Msr::write (Msr::IA32_APIC_BASE, apic_base | 0x800);
 
-    uint32 svr = read (LAPIC_SVR);
-    if (!(svr & 0x100))
-        write (LAPIC_SVR, svr | 0x100);
+        uint32 svr = read (LAPIC_SVR);
+        if (!(svr & 0x100))
+            write (LAPIC_SVR, svr | 0x100);
 
-    switch (lvt_max()) {
-        default:
-            set_lvt (LAPIC_LVT_THERM, VEC_LVT_THERM, DLV_FIXED);
-        case 4:
-            set_lvt (LAPIC_LVT_PERFM, VEC_LVT_PERFM, DLV_FIXED);
-        case 3:
-            set_lvt (LAPIC_LVT_ERROR, VEC_LVT_ERROR, DLV_FIXED);
-        case 2:
-            set_lvt (LAPIC_LVT_LINT1, 0, DLV_NMI);
-        case 1:
-            set_lvt (LAPIC_LVT_LINT0, 0, DLV_EXTINT, MASKED);
-        case 0:
-            set_lvt (LAPIC_LVT_TIMER, VEC_LVT_TIMER, DLV_FIXED);
-    }
+        switch (lvt_max()) {
+            default:
+                set_lvt (LAPIC_LVT_THERM, VEC_LVT_THERM, DLV_FIXED);
+            case 4:
+                set_lvt (LAPIC_LVT_PERFM, VEC_LVT_PERFM, DLV_FIXED);
+            case 3:
+                set_lvt (LAPIC_LVT_ERROR, VEC_LVT_ERROR, DLV_FIXED);
+            case 2:
+                set_lvt (LAPIC_LVT_LINT1, 0, DLV_NMI);
+            case 1:
+                set_lvt (LAPIC_LVT_LINT0, 0, DLV_EXTINT, MASKED);
+            case 0:
+                set_lvt (LAPIC_LVT_TIMER, VEC_LVT_TIMER, DLV_FIXED);
+        }
 
-    write (LAPIC_TPR, 0x10);
-    write (LAPIC_TMR_DCR, 0xb);
-    write (LAPIC_TMR_ICR, ~0U);
+        write (LAPIC_TPR, 0x10);
+        write (LAPIC_TMR_DCR, 0xb);
+        write (LAPIC_TMR_ICR, ~0U);
 
-    Cpu::id = find_cpu (id());
+        Cpu::id = find_cpu (id());
 
-    if ((Cpu::bsp = apic_base & 0x100))
-        calibrate();
+        if ((Cpu::bsp = apic_base & 0x100))
+            calibrate();
 
-    write (LAPIC_TMR_ICR, 0);
+        write (LAPIC_TMR_ICR, 0);
 
-    trace (TRACE_APIC, "APIC:%#lx ID:%#x VER:%#x LVT:%#x", apic_base & ~PAGE_MASK, id(), version(), lvt_max());
-*/
+        trace (TRACE_APIC, "APIC:%#lx ID:%#x VER:%#x LVT:%#x", apic_base &
+       ~PAGE_MASK, id(), version(), lvt_max());
+    */
 }
 
-void Lapic::calibrate()
-{
-    assert (0);
-/*
-    uint32 v1 = read (LAPIC_TMR_CCR);
-    uint32 t1 = static_cast<uint32>(rdtsc());
-    Acpi::delay (250);
-    uint32 v2 = read (LAPIC_TMR_CCR);
-    uint32 t2 = static_cast<uint32>(rdtsc());
+void Lapic::calibrate() {
+    assert(0);
+    /*
+        uint32 v1 = read (LAPIC_TMR_CCR);
+        uint32 t1 = static_cast<uint32>(rdtsc());
+        Acpi::delay (250);
+        uint32 v2 = read (LAPIC_TMR_CCR);
+        uint32 t2 = static_cast<uint32>(rdtsc());
 
-    freq_tsc = (t2 - t1) / 250;
-    freq_bus = (v1 - v2) / 250;
+        freq_tsc = (t2 - t1) / 250;
+        freq_bus = (v1 - v2) / 250;
 
-    trace (TRACE_CPU, "TSC:%u kHz BUS:%u kHz", freq_tsc, freq_bus);
-*/
+        trace (TRACE_CPU, "TSC:%u kHz BUS:%u kHz", freq_tsc, freq_bus);
+    */
 }
 
-void Lapic::timer_handler()
-{
-    panic ("Lapic::timer_handler\n");
+void Lapic::timer_handler() {
+    panic("[kern::Lapic::timer_handler] unhandled timer interrupt\n");
 }
 
-void Lapic::lvt_vector (unsigned vector)
-{
+void Lapic::lvt_vector(unsigned vector) {
     switch (vector) {
-        case VEC_LVT_TIMER: timer_handler(); break;
+    case VEC_LVT_TIMER:
+        timer_handler();
+        break;
     }
 
     eoi();
-
 }

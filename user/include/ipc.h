@@ -6,4 +6,4 @@ static int ipc_send(unsigned cap_slot, mword value) {
         syscall(SYS_IPC_SEND, static_cast<mword>(cap_slot), value));
 }
 
-static mword ipc_recv() { return syscall(SYS_IPC_RECV); }
+static int ipc_recv() { return static_cast<int>(syscall(SYS_IPC_RECV)); }

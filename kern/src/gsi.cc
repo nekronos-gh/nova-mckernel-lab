@@ -20,11 +20,10 @@
 #include "lapic.h"
 #include "vectors.h"
 
-Gsi         Gsi::gsi_table[NUM_GSI];
-unsigned    Gsi::irq_table[NUM_IRQ];
+Gsi Gsi::gsi_table[NUM_GSI];
+unsigned Gsi::irq_table[NUM_IRQ];
 
-void Gsi::setup()
-{
+void Gsi::setup() {
     for (unsigned gsi = 0; gsi < NUM_GSI; gsi++) {
 
         gsi_table[gsi].vec = static_cast<uint8>(VEC_GSI + gsi);
@@ -41,9 +40,8 @@ void Gsi::setup()
 }
 
 NORETURN
-void Gsi::vector (unsigned vector)
-{
+void Gsi::vector(unsigned vector) {
     unsigned gsi = vector - VEC_GSI;
 
-    panic ("Gsi::vector %#x - not completed\n", gsi);
+    panic("[kern::Gsi::vector] unhandled GSI %#x\n", gsi);
 }

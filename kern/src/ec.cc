@@ -29,8 +29,7 @@ Ec *Ec::current = 0;
 
 // solely used for root_invoke()
 Ec::Ec(void (*f)(), mword mbi, Pd *p)
-    : cont(f), priority(0), blocked(false), ipc_partner(nullptr), ipc_val(0),
-      ipc_sending(false), pd(p) {
+    : cont(f), priority(0), blocked(false), ipc_val(0), pd(p) {
     regs.eax = mbi;
     regs.cs = SEL_USER_CODE;
     regs.ds = SEL_USER_DATA;
@@ -41,8 +40,7 @@ Ec::Ec(void (*f)(), mword mbi, Pd *p)
 
 // only used by syscall create thread (EC+SC)
 Ec::Ec(mword eip, mword esp, unsigned prio, Pd *p)
-    : cont(ret_user_iret), priority(prio), blocked(false), ipc_partner(nullptr),
-      ipc_val(0), ipc_sending(false), pd(p) {
+    : cont(ret_user_iret), priority(prio), blocked(false), ipc_val(0), pd(p) {
     regs.cs = SEL_USER_CODE;
     regs.ds = SEL_USER_DATA;
     regs.es = SEL_USER_DATA;
@@ -87,7 +85,8 @@ void Ec::root_invoke() {
     Multiboot *mbi = static_cast<Multiboot *>(Ptab::remap(current->regs.eax));
 
     if (!(mbi->flags & 8) || (mbi->mods_count != 1))
-        panic("exactly ONE multi boot module is required.\n");
+        panic("[kern::Ec::root_invoke] exactly ONE multi boot module is "
+              "required.\n");
 
     // load module desciptor
     Multiboot_module mod =
@@ -101,7 +100,7 @@ void Ec::root_invoke() {
     // remap elf header
     Eh *e = static_cast<Eh *>(Ptab::remap(mod.mod_start));
     if (e->ei_magic != 0x464c457f || e->ei_data != 1 || e->type != 2)
-        panic("No ELF\n");
+        panic("[kern::Ec::root_invoke] No ELF\n");
 
     unsigned count = e->ph_count;
     current->regs.eip = e->entry;
@@ -117,7 +116,7 @@ void Ec::root_invoke() {
 
             if (p->f_size != p->m_size ||
                 p->v_addr % PAGE_SIZE != p->f_offs % PAGE_SIZE)
-                panic("Bad ELF\n");
+                panic("[kern::Ec::root_invoke] Bad ELF\n");
 
             mword phys = align_dn(p->f_offs + mod.mod_start, PAGE_SIZE);
             mword virt = align_dn(p->v_addr, PAGE_SIZE);
@@ -142,7 +141,7 @@ void Ec::root_invoke() {
     FAIL;
 }
 
-void Ec::handle_tss() { panic("Task gate invoked\n"); }
+void Ec::handle_tss() { panic("[kern::Ec::handle_tss] Task gate invoked\n"); }
 
 void Ec::handle_syscall(syscall_frame *f) {
     // By convention
@@ -181,7 +180,7 @@ void Ec::handle_exc(Exc_regs *r) {
         return;
 
     if (r->vec == Cpu::EXC_GP)
-        panic("%s GP (EIP=%#lx CR2=%#lx)\n",
+        panic("[kern::Ec::handle_exc] %s GP (EIP=%#lx CR2=%#lx)\n",
               r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
 
     if (r->vec == Cpu::EXC_PF) {
@@ -192,13 +191,15 @@ void Ec::handle_exc(Exc_regs *r) {
              ((r->cr2 - USER_HEAP_START) % USER_STACK_SIZE < PAGE_SIZE));
 
         if (is_main_stack_guard || is_heap_stack_guard)
-            panic("User Stack Overflow (EIP=%#lx CR2=%#lx)\n", r->eip, r->cr2);
+            panic("[kern::Ec::handle_exc] User Stack Overflow (EIP=%#lx "
+                  "CR2=%#lx)\n",
+                  r->eip, r->cr2);
 
-        panic("%s PF (EIP=%#lx CR2=%#lx)\n",
+        panic("[kern::Ec::handle_exc] %s PF (EIP=%#lx CR2=%#lx)\n",
               r->eip < LINK_ADDR ? "User" : "Kernel", r->eip, r->cr2);
     }
 
-    panic("%s EXC %#lx (EIP=%#lx CR2=%#lx)\n",
+    panic("[kern::Ec::handle_exc] %s EXC %#lx (EIP=%#lx CR2=%#lx)\n",
           r->eip < LINK_ADDR ? "User" : "Kernel", r->vec, r->eip, r->cr2);
 
     UNREACHED;

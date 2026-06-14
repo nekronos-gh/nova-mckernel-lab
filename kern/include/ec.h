@@ -49,9 +49,8 @@ class Ec {
     unsigned saved_priority = 0;
     bool blocked;
 
-    Ec *ipc_partner;
     mword ipc_val;
-    bool ipc_sending;
+    Ec *pending_sender = nullptr;
 
     ALWAYS_INLINE
     inline Sys_regs *sys_regs() { return &regs; }

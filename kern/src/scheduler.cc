@@ -6,7 +6,8 @@ Scheduler Scheduler::sched;
 void Scheduler::schedule(Ec *ec) {
     Queue &q = queues[ec->priority];
     if (q.count >= MAX_ECS)
-        panic("Scheduler: queue full at priority %u\n", ec->priority);
+        panic("[kern::Scheduler::schedule] queue full at priority %u\n",
+              ec->priority);
     q.slots[q.tail] = ec;
     q.blocked[q.tail] = 0; // Not blocked by default
     q.tail = (q.tail + 1) % MAX_ECS;
@@ -56,7 +57,8 @@ Ec *Scheduler::yield() {
     }
 
     // Nothing runnable
-    return nullptr;
+    panic("[kern::scheduler] ERROR: No ECs to run\n");
+    UNREACHED;
 }
 
 Ec *Scheduler::block(Ec *ec) {

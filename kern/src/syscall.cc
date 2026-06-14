@@ -42,22 +42,35 @@ class SyscallPrint : public Syscall {
 class SyscallCreateEC : public Syscall {
   public:
     void handle(syscall_frame *f) override {
-        if (f->argc < 3)
+        if (f->argc < 4)
             return;
         syscall_create_ec *frame = static_cast<syscall_create_ec *>(f);
 
-        Pd *target_pd = Ec::current->pd;
+        // Select correct EC
+        if (frame->target_pd >= MAX_CAPS) {
+            printf("[kern::SyscallCreateEC::handle]\t ERROR: invalid target_pd "
+                   "%d\n",
+                   frame->target_pd);
+            Ec::current->sys_regs()->eax = static_cast<mword>(-1);
+            return;
+        }
+        Pd *target_pd = Ec::current->pd->children[frame->target_pd];
 
-        // Cloned EC inherits the same protection domain as the caller
+        // Create clone EC on target PD
         Ec *user_ec =
             new Ec(frame->eip(), frame->esp(), frame->priority(), target_pd);
-
         int capability = target_pd->set_cap(frame->capability(), user_ec);
+
         if (capability < 0) {
             // FIX: We do not have a delete operator
             // This is a memory leak
+            printf("[kern::SyscallCreateEC::handle] ERROR: could not add "
+                   "capability");
             return;
         }
+
+        // Add EC to current PD
+        capability = Ec::current->pd->set_cap(frame->capability(), user_ec);
 
         Scheduler::sched.schedule(user_ec);
         Ec::current->sys_regs()->eax = static_cast<mword>(capability);
@@ -174,37 +187,44 @@ class SyscallIpcSend : public Syscall {
     void handle(syscall_frame *f) override {
         syscall_ipc_send *frame = static_cast<syscall_ipc_send *>(f);
         Ec *caller = Ec::current;
-        // Inter PD resolution
+
         Ec *target = caller->pd->get_cap(frame->target_cap);
         if (!target) {
+            printf("[kern::SyscallIpcSend::handle]\t ERROR: could not send "
+                   "message to %u\n",
+                   frame->target_cap);
             caller->sys_regs()->eax = static_cast<mword>(-1);
             return;
         }
 
-        // If target already waiting to receive
-        if (target->ipc_partner != nullptr && !target->ipc_sending) {
-            target->ipc_val = frame->value;
+        // Fast path: receiver is blocked waiting
+        if (target->pending_sender == target) {
+            target->pending_sender = nullptr;
             target->sys_regs()->eax = frame->value;
-            target->ipc_partner = nullptr;
-            caller->ipc_partner = nullptr;
-            // Inherit priority from caller until the value is read
-            if (target->priority > caller->priority) {
-                target->saved_priority = target->priority;
-                Scheduler::sched.reprioritize(target, caller->priority);
-            }
+
+            // Target will have the data when scheduled
             Scheduler::sched.unblock(target);
-            return;
+            Ec *next = Scheduler::sched.yield();
+            if (next)
+                next->make_current();
+            UNREACHED;
         }
 
-        // Otherwise block ourselves until target receives
-
+        // Slow path: receiver not ready
         caller->ipc_val = frame->value;
-        caller->ipc_partner = target;
-        caller->ipc_sending = true;
+
+        // Priority inheritance to prevent priority inversion
+        if (caller->priority < target->priority) {
+            target->saved_priority = target->priority;
+            Scheduler::sched.reprioritize(target, caller->priority);
+        }
+
+        // Register on target's sender list
+        caller->pending_sender = target->pending_sender;
+        target->pending_sender = caller;
         Ec *next = Scheduler::sched.block(caller);
         if (next)
             next->make_current();
-
         UNREACHED;
     }
 };
@@ -214,34 +234,30 @@ class SyscallIpcRecv : public Syscall {
     void handle(syscall_frame *) override {
         Ec *caller = Ec::current;
 
-        // Scan the PD cap table for any EC whose trying to write
-        Pd *pd = caller->pd;
-        for (unsigned i = 0; i < MAX_CAPS; ++i) {
-            Ec *writer = pd->get_cap(i);
-            if (writer && writer->ipc_partner == caller &&
-                writer->ipc_sending) {
-                mword val = writer->ipc_val;
-                // Clear data
-                writer->ipc_partner = nullptr;
-                writer->ipc_sending = false;
-                caller->ipc_partner = nullptr;
-                caller->ipc_sending = false;
-                // Return the value
-                caller->sys_regs()->eax = val;
-                if (caller->saved_priority != caller->priority) {
-                    Scheduler::sched.reprioritize(caller,
-                                                  caller->saved_priority);
-                }
+        if (caller->pending_sender != nullptr &&
+            caller->pending_sender != caller) {
+            Ec *sender = caller->pending_sender;
+            caller->pending_sender = sender->pending_sender;
 
-                Scheduler::sched.unblock(writer);
-                return;
+            caller->sys_regs()->eax = sender->ipc_val;
+
+            // Restore boosted priority if no more senders
+            if (caller->pending_sender == nullptr &&
+                caller->saved_priority != 0) {
+                Scheduler::sched.reprioritize(caller, caller->saved_priority);
+                caller->saved_priority = 0;
             }
+
+            Scheduler::sched.unblock(sender);
+            return;
         }
 
-        // No sender yet, block and wait
-        caller->ipc_partner = caller; // will be matched by sender
-        caller->ipc_sending = false;
-
+        // No sender yet, block
+        if (caller->saved_priority != 0) {
+            Scheduler::sched.reprioritize(caller, caller->saved_priority);
+            caller->saved_priority = 0;
+        }
+        caller->pending_sender = caller;
         Ec *next = Scheduler::sched.block(caller);
         if (next)
             next->make_current();
